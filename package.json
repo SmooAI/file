@@ -1,16 +1,19 @@
 {
-    "name": "@smooai/library-template",
+    "name": "@smooai/file",
     "version": "1.0.2",
     "private": true,
     "description": "SmooAI Library Template",
-    "homepage": "https://github.com/SmooAI/library-template#readme",
+    "homepage": "https://github.com/SmooAI/file#readme",
     "bugs": {
-        "url": "https://github.com/SmooAI/library-template/issues"
+        "url": "https://github.com/SmooAI/file/issues"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/SmooAI/library-template.git"
+        "url": "https://github.com/SmooAI/file.git"
     },
+    "files": [
+        "dist/**"
+    ],
     "license": "MIT",
     "author": {
         "name": "SmooAI",
@@ -32,14 +35,25 @@
         "watch": "tsup --watch"
     },
     "dependencies": {
-        "@smooai/logger": "^1.0.14",
-        "@smooai/utils": "^1.0.12"
+        "@aws-sdk/client-s3": "^3.777.0",
+        "@aws-sdk/s3-request-presigner": "^3.777.0",
+        "@file-type/xml": "^0.4.1",
+        "@smooai/fetch": "^1.0.7",
+        "@smooai/logger": "^1.0.19",
+        "@smooai/utils": "^1.0.18",
+        "content-disposition": "^0.5.4",
+        "file-type": "^20.4.1",
+        "formdata-node": "^6.0.3",
+        "mime-types": "^2.1.35",
+        "tiny-invariant": "^1.3.3"
     },
     "devDependencies": {
         "@changesets/cli": "^2.28.1",
-        "@smooai/config-eslint": "^1.0.9",
-        "@smooai/config-typescript": "^1.0.13",
-        "@types/node": "^20.13.0",
+        "@smooai/config-eslint": "^1.0.12",
+        "@smooai/config-typescript": "^1.0.16",
+        "@types/content-disposition": "^0.5.8",
+        "@types/mime-types": "^2.1.4",
+        "@types/node": "^22.13.10",
         "@vercel/style-guide": "^6.0.0",
         "eslint": "^9.21.0",
         "husky": "^9.1.7",

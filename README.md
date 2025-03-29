@@ -35,13 +35,13 @@ SmooAI is a platform for building and deploying AI-powered apps.
 
 Learn more on [smoo.ai](https://smoo.ai)
 
-## About @smooai/library-template
+## About @smooai/file
 
 A template repository for creating new SmooAI libraries with standardized tooling, configuration, and best practices.
 
-![GitHub License](https://img.shields.io/github/license/SmooAI/library-template?style=for-the-badge)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/SmooAI/library-template/release.yml?style=for-the-badge)
-![GitHub Repo stars](https://img.shields.io/github/stars/SmooAI/library-template?style=for-the-badge)
+![GitHub License](https://img.shields.io/github/license/SmooAI/file?style=for-the-badge)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/SmooAI/file/release.yml?style=for-the-badge)
+![GitHub Repo stars](https://img.shields.io/github/stars/SmooAI/file?style=for-the-badge)
 
 ### Key Features
 
