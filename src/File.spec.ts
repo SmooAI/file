@@ -548,15 +548,6 @@ describe('#File', () => {
             expect(mockWriter.write).toHaveBeenCalled();
             expect(mockWriter.close).toHaveBeenCalled();
         });
-
-        it('should get stream', async () => {
-            const file = await File.createFromBytes(new ArrayBuffer(8), { name: 'example.txt' });
-
-            const stream = await file.getStream();
-
-            expect(stream).toBeDefined();
-            expect(stream.fileType).toEqual({ ext: 'txt', mime: 'text/plain', useActual: false });
-        });
     });
 
     describe('S3 operations', () => {
@@ -583,29 +574,6 @@ describe('#File', () => {
                     }),
                 }),
             );
-        });
-
-        it('should copy to S3', async () => {
-            const file = await File.createFromBytes(new ArrayBuffer(8), {
-                name: 'example.txt',
-                mimeType: 'text/plain',
-                size: 8,
-            });
-            const bucket = 'test-bucket';
-            const key = 'example.txt';
-
-            const stream = new ReadableStream({
-                start(controller) {
-                    controller.enqueue(new Uint8Array(8));
-                    controller.close();
-                },
-            });
-            vi.spyOn(file, 'getStream').mockResolvedValue(stream);
-
-            await file.copyToS3(bucket, key);
-
-            const s3Client = new S3Client();
-            expect(s3Client.send).toHaveBeenCalled();
         });
 
         it('should move to S3', async () => {
@@ -781,6 +749,140 @@ describe('#File', () => {
                 createdAt: new Date('2023-12-31'),
                 path: path.join(__dirname, 'test', '/example.docx'),
             });
+        });
+
+        it('should return undefined for missing metadata values', async () => {
+            setMockSteamFileTypeResult({ mime: undefined, ext: undefined });
+            const file = await File.createFromBytes(new ArrayBuffer(8));
+
+            expect(file.name).toBeUndefined();
+            expect(file.mimeType).toBeUndefined();
+            expect(file.size).toBe(8);
+            expect(file.extension).toBeUndefined();
+            expect(file.url).toBeUndefined();
+            expect(file.path).toBeUndefined();
+            expect(file.hash).toBeUndefined();
+            expect(file.lastModified).toBeUndefined();
+            expect(file.createdAt).toBeUndefined();
+        });
+    });
+
+    describe('metadata getters', () => {
+        it('should return correct metadata values from URL file', async () => {
+            const url = 'https://example.com/example.png';
+            const response = new Response(mockReadStream, {
+                headers: {
+                    'content-disposition': 'attachment; filename="example.png"',
+                    'content-type': 'image/png',
+                    'content-length': '1024',
+                    etag: '"abc123"',
+                    'last-modified': '2024-01-01T00:00:00Z',
+                },
+            });
+
+            vi.mocked(fetch).mockResolvedValue(response);
+            setMockSteamFileTypeResult({ mime: 'image/png', ext: 'png' });
+
+            const file = await File.createFromUrl(url);
+
+            expect(file.name).toBe('example.png');
+            expect(file.mimeType).toBe('image/png');
+            expect(file.size).toBe(1024);
+            expect(file.extension).toBe('png');
+            expect(file.url).toBe(url);
+            expect(file.path).toBeUndefined();
+            expect(file.hash).toBe('abc123');
+            expect(file.lastModified).toEqual(new Date('2024-01-01T00:00:00Z'));
+            expect(file.createdAt).toBeUndefined();
+        });
+
+        it('should return correct metadata values from S3 file', async () => {
+            const bucket = 'test-bucket';
+            const key = 'example.txt';
+            const s3Client = new S3Client();
+            const mockSend = vi.mocked(s3Client.send);
+            mockSend.mockImplementation(async (command: any) => {
+                if (command instanceof GetObjectCommand) {
+                    return {
+                        Body: mockReadStream,
+                        ContentType: 'text/plain',
+                        ContentLength: 1024,
+                        LastModified: new Date('2024-01-01'),
+                        ETag: '"xyz789"',
+                    } as GetObjectCommandOutput;
+                }
+                return undefined;
+            });
+
+            const file = await File.createFromS3(bucket, key);
+
+            expect(file.name).toBe('example.txt');
+            expect(file.mimeType).toBe('text/plain');
+            expect(file.size).toBe(1024);
+            expect(file.extension).toBe('txt');
+            expect(file.url).toBe(`s3://${bucket}/${key}`);
+            expect(file.path).toBeUndefined();
+            expect(file.hash).toBe('xyz789');
+            expect(file.lastModified).toEqual(new Date('2024-01-01'));
+            expect(file.createdAt).toBeUndefined();
+        });
+
+        it('should return correct metadata values from local file', async () => {
+            const filePath = path.join(__dirname, 'test', 'example.txt');
+            vi.mocked(fs.promises.stat).mockResolvedValue({
+                size: 1024,
+                mtime: new Date('2024-01-01'),
+                birthtime: new Date('2023-12-31'),
+                isFile: () => true,
+                isDirectory: () => false,
+                isSymbolicLink: () => false,
+                isBlockDevice: () => false,
+                isCharacterDevice: () => false,
+                isFIFO: () => false,
+                isSocket: () => false,
+                uid: 0,
+                gid: 0,
+                rdev: 0,
+                blksize: 0,
+                blocks: 0,
+                ino: 0,
+                mode: 0,
+                nlink: 0,
+                atime: new Date(),
+                ctime: new Date(),
+                atimeMs: 0,
+                mtimeMs: 0,
+                ctimeMs: 0,
+                birthtimeMs: 0,
+                dev: 0,
+            });
+
+            const file = await File.createFromFile(filePath);
+
+            expect(file.name).toBe('example.txt');
+            expect(file.mimeType).toBe('text/plain');
+            expect(file.size).toBe(1024);
+            expect(file.extension).toBe('txt');
+            expect(file.url).toBeUndefined();
+            expect(file.path).toBe(filePath);
+            expect(file.hash).toBeUndefined();
+            expect(file.lastModified).toEqual(new Date('2024-01-01'));
+            expect(file.createdAt).toEqual(new Date('2023-12-31'));
+        });
+
+        it('should return undefined for missing metadata values', async () => {
+            setMockSteamFileTypeResult({ mime: undefined, ext: undefined });
+            const file = await File.createFromBytes(new ArrayBuffer(8));
+
+            expect(file.name).toBeUndefined();
+            expect(file.mimeType).toBeUndefined();
+            expect(file.size).toBe(8);
+            expect(file.extension).toBeUndefined();
+            expect(file.url).toBeUndefined();
+            expect(file.path).toBeUndefined();
+            expect(file.hash).toBeUndefined();
+            expect(file.lastModified).toBeUndefined();
+            expect(file.createdAt).toBeUndefined();
         });
     });
 

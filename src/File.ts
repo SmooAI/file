@@ -61,6 +61,42 @@ export default class File {
         return this._metadata;
     }
 
+    get name(): string | undefined {
+        return this._metadata.name;
+    }
+
+    get mimeType(): string | undefined {
+        return this._metadata.mimeType;
+    }
+
+    get size(): number | undefined {
+        return this._metadata.size;
+    }
+
+    get extension(): string | undefined {
+        return this._metadata.extension;
+    }
+
+    get url(): string | undefined {
+        return this._metadata.url;
+    }
+
+    get path(): string | undefined {
+        return this._metadata.path;
+    }
+
+    get hash(): string | undefined {
+        return this._metadata.hash;
+    }
+
+    get lastModified(): Date | undefined {
+        return this._metadata.lastModified;
+    }
+
+    get createdAt(): Date | undefined {
+        return this._metadata.createdAt;
+    }
+
     private set metadata(value: Metadata) {
         this._metadata = value;
     }
@@ -386,54 +422,6 @@ export default class File {
         await writer.close();
     }
 
-    async getStream(): Promise<AnyWebReadableByteStreamWithFileType> {
-        // Create a new stream each time to avoid the "locked" issue
-        if (this.bytes) {
-            const nodeStream = new Readable();
-            nodeStream.push(Buffer.from(this.bytes));
-            nodeStream.push(null);
-            nodeStream.pause();
-            const webStream = Readable.toWeb(nodeStream);
-            return await toDetectionStream(webStream);
-        }
-
-        // For file-based streams, create a new read stream
-        if (this.fileSource === FileSource.File && this.metadata.path) {
-            const nodeStream = fs.createReadStream(this.metadata.path).pause();
-            const webStream = Readable.toWeb(nodeStream);
-            return await toDetectionStream(webStream);
-        }
-
-        // For URL-based streams, fetch again
-        if (this.fileSource === FileSource.Url && this.metadata.url) {
-            const response = await fetch(this.metadata.url);
-            const webStream = response.body as unknown as ReadableStream<Uint8Array>;
-            return await toDetectionStream(webStream);
-        }
-
-        // For other cases, create a new stream from the existing one
-        const stream = this.stream;
-        const newStream = new ReadableStream({
-            async start(controller) {
-                const reader = stream;
-                try {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) {
-                            controller.close();
-                            break;
-                        }
-                        controller.enqueue(value);
-                    }
-                } catch (error) {
-                    controller.error(error);
-                }
-            },
-        });
-
-        return await toDetectionStream(newStream);
-    }
-
     async uploadToS3(bucket: string, key: string): Promise<void> {
         const reader = this.stream;
         const chunks: Uint8Array[] = [];
@@ -455,10 +443,6 @@ export default class File {
         });
 
         await s3Client.send(command);
-    }
-
-    async copyToS3(bucket: string, key: string): Promise<void> {
-        await this.uploadToS3(bucket, key);
     }
 
     async moveToS3(bucket: string, key: string): Promise<void> {
