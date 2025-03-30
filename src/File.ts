@@ -1,6 +1,6 @@
 import { GetObjectCommand, GetObjectCommandOutput, S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import contentDisposition from 'content-disposition';
-import { fileTypeFromFile, AnyWebReadableByteStreamWithFileType, ReadableStreamWithFileType, FileTypeParser } from 'file-type/node';
+import { fileTypeFromFile, ReadableStreamWithFileType, FileTypeParser } from 'file-type/node';
 import { detectXml } from '@file-type/xml';
 import { File as FormDataFile, FormData } from 'formdata-node';
 import fs from 'fs';
@@ -41,6 +41,7 @@ export enum FileSource {
     Bytes = 'Bytes',
     File = 'File',
     Stream = 'Stream',
+    S3 = 'S3',
 }
 
 export default class File {
@@ -95,6 +96,10 @@ export default class File {
 
     get createdAt(): Date | undefined {
         return this._metadata.createdAt;
+    }
+
+    get source(): FileSource {
+        return this.fileSource;
     }
 
     private set metadata(value: Metadata) {
@@ -164,11 +169,11 @@ export default class File {
                 url: `s3://${bucket}/${key}`,
                 name: path.basename(key),
             },
-            fileSource: FileSource.Url,
+            fileSource: FileSource.S3,
             stream: typedStream,
             s3Response: response,
         });
-        return new File(FileSource.Url, typedStream, metadata);
+        return new File(FileSource.S3, typedStream, metadata);
     }
 
     static async createFromBytes(bytes: ArrayBuffer, metadataHint?: MetadataHint): Promise<File> {
@@ -236,7 +241,6 @@ export default class File {
 
         let stream = options.stream;
         if (!stream && response?.body) {
-            // @smooai/fetch should provide a Web ReadableStream
             const nodeStream = new Readable().wrap(response.body as unknown as NodeJS.ReadableStream).pause();
             stream = await toDetectionStream(nodeStream);
         }
@@ -370,37 +374,45 @@ export default class File {
         });
     }
 
-    async saveToFile(destinationPath: string): Promise<void> {
-        const writeStream = fs.createWriteStream(destinationPath);
+    private async cloneStream(): Promise<ReadableStream> {
+        const chunks: Uint8Array[] = [];
         const reader = this.stream;
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                writeStream.write(Buffer.from(value));
-            }
-            await new Promise<void>((resolve, reject) => {
-                writeStream.on('finish', () => resolve());
-                writeStream.on('error', (err) => reject(err));
-            });
-        } finally {
-            writeStream.end();
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
         }
+        
+        return new ReadableStream({
+            start(controller) {
+                for (const chunk of chunks) {
+                    controller.enqueue(chunk);
+                }
+                controller.close();
+            }
+        });
     }
 
-    async copyTo(destinationPath: string): Promise<void> {
-        await this.saveToFile(destinationPath);
+    async saveToFile(destinationPath: string): Promise<{ original: File; newFile: File }> {
+        const writeStream = fs.createWriteStream(destinationPath);
+        await this.pipeTo(writeStream);
+        return {
+            original: this,
+            newFile: await File.createFromFile(destinationPath)
+        };
     }
 
-    async moveTo(destinationPath: string): Promise<void> {
+    async moveTo(destinationPath: string): Promise<File> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             await this.saveToFile(destinationPath);
             await fs.promises.unlink(this.metadata.path);
             this.metadata.path = destinationPath;
             this.metadata.name = path.basename(destinationPath);
+            return File.createFromFile(destinationPath);
         } else {
             await this.saveToFile(destinationPath);
+            return File.createFromFile(destinationPath);
         }
     }
 
@@ -410,16 +422,17 @@ export default class File {
         }
     }
 
-    async pipeTo(destination: WritableStream): Promise<void> {
+    async pipeTo(destination: NodeJS.WritableStream): Promise<void> {
         const reader = this.stream;
-        const writer = destination.getWriter();
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            await writer.write(value);
-        }
-        await writer.close();
+        const nodeStream = new Readable().wrap(reader);
+        
+        return new Promise((resolve, reject) => {
+            nodeStream.on('error', reject);
+            destination.on('error', reject);
+            destination.on('finish', resolve);
+            
+            nodeStream.pipe(destination);
+        });
     }
 
     async uploadToS3(bucket: string, key: string): Promise<void> {
@@ -445,11 +458,47 @@ export default class File {
         await s3Client.send(command);
     }
 
-    async moveToS3(bucket: string, key: string): Promise<void> {
-        await this.uploadToS3(bucket, key);
+    async saveToS3(bucket: string, key: string): Promise<{ original: File; newFile: File }> {
+        // Upload to S3 and create new file instance
+        const command = new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Body: await this.toBuffer(),
+            ContentType: this.metadata.mimeType,
+            ContentLength: this.metadata.size,
+            ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
+        });
+
+        await s3Client.send(command);
+        
+        // Create new file instance
+        const newFile = await File.createFromS3(bucket, key);
+
+        // Refresh the original file's stream based on source type
+        await this.refreshStream();
+
+        return { original: this, newFile };
+    }
+
+    async moveToS3(bucket: string, key: string): Promise<File> {
+        // Upload to S3 and get new file instance
+        const command = new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Body: await this.toBuffer(),
+            ContentType: this.metadata.mimeType,
+            ContentLength: this.metadata.size,
+            ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
+        });
+
+        await s3Client.send(command);
+
+        // If this is a file on disk, delete it
         if (this.fileSource === FileSource.File && this.metadata.path) {
             await fs.promises.unlink(this.metadata.path);
         }
+
+        return File.createFromS3(bucket, key);
     }
 
     async exists(): Promise<boolean> {
@@ -553,7 +602,7 @@ export default class File {
     }
 
     async getSignedUrl(expiresIn: number = 3600): Promise<string> {
-        if (this.metadata.url?.startsWith('s3://')) {
+        if (this.fileSource === FileSource.S3 && this.metadata.url) {
             const [bucket, key] = this.metadata.url.replace('s3://', '').split('/', 2);
             const command = new GetObjectCommand({
                 Bucket: bucket,
@@ -562,5 +611,56 @@ export default class File {
             return await getSignedUrl(s3Client, command, { expiresIn });
         }
         throw new Error('Cannot generate signed URL for non-S3 file');
+    }
+
+    private async refreshStream(): Promise<void> {
+        switch (this.fileSource) {
+            case FileSource.File:
+                if (this.metadata.path) {
+                    const nodeStream = fs.createReadStream(this.metadata.path);
+                    this.stream = await toDetectionStream(nodeStream);
+                }
+                break;
+            case FileSource.S3:
+                if (this.metadata.url) {
+                    const [bucket, key] = this.metadata.url.replace('s3://', '').split('/', 2);
+                    const response = await s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+                    const webStream = response.Body as unknown as ReadableStream;
+                    const nodeStream = File.webStreamToNodeStream(webStream);
+                    this.stream = await toDetectionStream(nodeStream);
+                }
+                break;
+            case FileSource.Url:
+                if (this.metadata.url) {
+                    const response = await fetch(this.metadata.url);
+                    const webStream = response.body as unknown as ReadableStream;
+                    const nodeStream = File.webStreamToNodeStream(webStream);
+                    this.stream = await toDetectionStream(nodeStream);
+                }
+                break;
+            case FileSource.Bytes:
+                if (this.bytes) {
+                    const nodeStream = new Readable();
+                    nodeStream.push(Buffer.from(this.bytes));
+                    nodeStream.push(null);
+                    this.stream = await toDetectionStream(nodeStream);
+                }
+                break;
+            case FileSource.Stream:
+                throw new Error('Cannot refresh generic stream after consumption');
+        }
+    }
+
+    private async toBuffer(): Promise<Buffer> {
+        const chunks: Uint8Array[] = [];
+        const reader = this.stream;
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+        }
+        
+        return Buffer.concat(chunks);
     }
 }

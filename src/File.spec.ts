@@ -7,6 +7,7 @@ import fs from 'fs';
 import { S3Client, GetObjectCommandOutput, GetObjectCommand } from '@aws-sdk/client-s3';
 import path from 'path';
 import { detectXml } from '@file-type/xml';
+import { Readable } from 'stream';
 
 // Helper function to create a mock S3Client
 function createMockS3Client(): S3Client {
@@ -44,14 +45,14 @@ const { setMockSteamFileTypeResult, createMockTypedStream, mockReadStream, reset
 
         // Helper function to create a mock typed stream
         const createMockTypedStream = (fileTypeOptions: Partial<FileTypeResult> = mockSteamFileTypeResult) => {
-            const mockReader = {
-                read: vi
-                    .fn()
-                    .mockResolvedValueOnce({ done: false, value: new Uint8Array(8) })
-                    .mockResolvedValue({ done: true }),
-            };
+            const mockStream = new Readable({
+                read() {
+                    this.push(Buffer.from(new Uint8Array(8)));
+                    this.push(null);
+                }
+            });
 
-            return Object.assign(mockReader, {
+            return Object.assign(mockStream, {
                 fileType: fileTypeOptions,
             }) as unknown as ReadableStreamWithFileType;
         };
@@ -61,8 +62,32 @@ const { setMockSteamFileTypeResult, createMockTypedStream, mockReadStream, reset
         const mockWriteStream = {
             write: vi.fn(),
             end: vi.fn(),
-            on: vi.fn(),
-            close: vi.fn(),
+            on: vi.fn().mockImplementation((event, callback) => {
+                if (event === 'finish') {
+                    callback();
+                }
+            }),
+            pipe: vi.fn().mockReturnThis(),
+            unpipe: vi.fn(),
+            cork: vi.fn(),
+            uncork: vi.fn(),
+            setDefaultEncoding: vi.fn(),
+            getDefaultEncoding: vi.fn(),
+            destroy: vi.fn(),
+            addListener: vi.fn(),
+            emit: vi.fn(),
+            eventNames: vi.fn(),
+            getMaxListeners: vi.fn(),
+            listenerCount: vi.fn(),
+            listeners: vi.fn(),
+            off: vi.fn(),
+            once: vi.fn(),
+            prependListener: vi.fn(),
+            prependOnceListener: vi.fn(),
+            rawListeners: vi.fn(),
+            removeAllListeners: vi.fn(),
+            removeListener: vi.fn(),
+            setMaxListeners: vi.fn(),
             bytesWritten: 0,
             path: '',
             pending: false,
@@ -81,24 +106,6 @@ const { setMockSteamFileTypeResult, createMockTypedStream, mockReadStream, reset
             _writev: vi.fn(),
             _destroy: vi.fn(),
             _final: vi.fn(),
-            setDefaultEncoding: vi.fn(),
-            cork: vi.fn(),
-            uncork: vi.fn(),
-            destroy: vi.fn(),
-            addListener: vi.fn(),
-            emit: vi.fn(),
-            eventNames: vi.fn(),
-            getMaxListeners: vi.fn(),
-            listenerCount: vi.fn(),
-            listeners: vi.fn(),
-            off: vi.fn(),
-            once: vi.fn(),
-            prependListener: vi.fn(),
-            prependOnceListener: vi.fn(),
-            rawListeners: vi.fn(),
-            removeAllListeners: vi.fn(),
-            removeListener: vi.fn(),
-            setMaxListeners: vi.fn(),
         } as unknown as fs.WriteStream;
 
         return {
@@ -358,6 +365,7 @@ describe('#File', () => {
                         callback();
                     }
                 }),
+                pipe: vi.fn().mockReturnThis(),
             } as unknown as ReturnType<typeof fs.createWriteStream>;
 
             vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream);
@@ -380,11 +388,12 @@ describe('#File', () => {
                         callback();
                     }
                 }),
+                pipe: vi.fn().mockReturnThis(),
             } as unknown as ReturnType<typeof fs.createWriteStream>;
 
             vi.mocked(fs.createWriteStream).mockReturnValueOnce(mockWriteStream);
 
-            await file.copyTo(destinationPath);
+            await file.saveToFile(destinationPath);
 
             expect(mockWriteStream.write).toHaveBeenCalledWith(Buffer.from(new Uint8Array(8)));
             expect(mockWriteStream.end).toHaveBeenCalled();
@@ -402,11 +411,12 @@ describe('#File', () => {
                         callback();
                     }
                 }),
+                pipe: vi.fn().mockReturnThis(),
             } as unknown as ReturnType<typeof fs.createWriteStream>;
 
             vi.mocked(fs.createWriteStream).mockReturnValueOnce(mockWriteStream);
 
-            await file.moveTo(destinationPath);
+            await file.saveToFile(destinationPath);
 
             expect(mockWriteStream.write).toHaveBeenCalledWith(Buffer.from(new Uint8Array(8)));
             expect(mockWriteStream.end).toHaveBeenCalled();
@@ -426,11 +436,12 @@ describe('#File', () => {
                         callback();
                     }
                 }),
+                pipe: vi.fn().mockReturnThis(),
             } as unknown as ReturnType<typeof fs.createWriteStream>;
 
             vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream);
 
-            await file.copyTo(destinationPath);
+            await file.saveToFile(destinationPath);
 
             expect(mockWriteStream.write).toHaveBeenCalled();
             expect(mockWriteStream.end).toHaveBeenCalled();
@@ -451,11 +462,12 @@ describe('#File', () => {
                         callback();
                     }
                 }),
+                pipe: vi.fn().mockReturnThis(),
             } as unknown as ReturnType<typeof fs.createWriteStream>;
 
             vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream);
 
-            await file.moveTo(destinationPath);
+            await file.saveToFile(destinationPath);
 
             expect(mockWriteStream.write).toHaveBeenCalled();
             expect(mockWriteStream.end).toHaveBeenCalled();
@@ -537,16 +549,156 @@ describe('#File', () => {
             const file = await File.createFromBytes(new ArrayBuffer(8), { name: 'example.txt' });
             const mockWriter = {
                 write: vi.fn(),
-                close: vi.fn(),
-            };
-            const destination = {
-                getWriter: vi.fn().mockReturnValue(mockWriter),
-            } as unknown as WritableStream;
+                end: vi.fn(),
+                on: vi.fn().mockImplementation((event, callback) => {
+                    if (event === 'finish') {
+                        callback();
+                    }
+                }),
+            } as unknown as NodeJS.WritableStream;
 
-            await file.pipeTo(destination);
+            await file.pipeTo(mockWriter);
 
             expect(mockWriter.write).toHaveBeenCalled();
-            expect(mockWriter.close).toHaveBeenCalled();
+            expect(mockWriter.end).toHaveBeenCalled();
+        });
+
+        it('should refresh stream for file source', async () => {
+            const file = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const originalBytes = await file.readFileBytes();
+            
+            // Consume the stream
+            await file.readFileBytes();
+            
+            // Refresh the stream
+            await file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt'));
+            
+            // Verify we can still read from the refreshed stream
+            const newBytes = await file.readFileBytes();
+            expect(newBytes).toBeDefined();
+            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
+        });
+
+        it('should refresh stream for S3 source', async () => {
+            const file = await File.createFromS3('test-bucket', 'test-key.txt');
+            const originalBytes = await file.readFileBytes();
+            
+            // Consume the stream
+            await file.readFileBytes();
+            
+            // Refresh the stream
+            await file.saveToS3('test-bucket', 'test-key-refreshed.txt');
+            
+            // Verify we can still read from the refreshed stream
+            const newBytes = await file.readFileBytes();
+            expect(newBytes).toBeDefined();
+            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
+        });
+
+        it('should refresh stream for URL source', async () => {
+            const file = await File.createFromUrl('https://example.com/test.txt');
+            const originalBytes = await file.readFileBytes();
+            
+            // Consume the stream
+            await file.readFileBytes();
+            
+            // Refresh the stream
+            await file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt'));
+            
+            // Verify we can still read from the refreshed stream
+            const newBytes = await file.readFileBytes();
+            expect(newBytes).toBeDefined();
+            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
+        });
+
+        it('should refresh stream for bytes source', async () => {
+            const file = await File.createFromBytes(new ArrayBuffer(8));
+            const originalBytes = await file.readFileBytes();
+            
+            // Consume the stream
+            await file.readFileBytes();
+            
+            // Refresh the stream
+            await file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt'));
+            
+            // Verify we can still read from the refreshed stream
+            const newBytes = await file.readFileBytes();
+            expect(newBytes).toBeDefined();
+            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
+        });
+
+        it('should throw error when refreshing generic stream', async () => {
+            const mockStream = new Readable();
+            const file = await File.createFromStream(mockStream);
+            
+            // Consume the stream
+            await file.readFileBytes();
+            
+            // Attempt to refresh the stream
+            await expect(file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt')))
+                .rejects.toThrow('Cannot refresh generic stream after consumption');
+        });
+    });
+
+    describe('file instance operations', () => {
+        it('should preserve original file instance after saveToFile', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const destinationPath = path.join(__dirname, 'test', 'destination.txt');
+            
+            const result = await sourceFile.saveToFile(destinationPath);
+            
+            expect(result.original).toBe(sourceFile);
+            expect(result.newFile).toBeInstanceOf(File);
+            expect(result.newFile.metadata.path).toBe(destinationPath);
+            
+            // Verify original file is still usable
+            const originalBytes = await result.original.readFileBytes();
+            expect(originalBytes).toBeDefined();
+            expect(originalBytes.byteLength).toBeGreaterThan(0);
+        });
+
+        it('should preserve original file instance after saveToS3', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const bucket = 'test-bucket';
+            const key = 'test-key.txt';
+            
+            const result = await sourceFile.saveToS3(bucket, key);
+            
+            expect(result.original).toBe(sourceFile);
+            expect(result.newFile).toBeInstanceOf(File);
+            expect(result.newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
+            
+            // Verify original file is still usable
+            const originalBytes = await result.original.readFileBytes();
+            expect(originalBytes).toBeDefined();
+            expect(originalBytes.byteLength).toBeGreaterThan(0);
+        });
+
+        it('should return new file instance after moveTo', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const destinationPath = path.join(__dirname, 'test', 'destination.txt');
+            
+            const newFile = await sourceFile.moveTo(destinationPath);
+            
+            expect(newFile).toBeInstanceOf(File);
+            expect(newFile.metadata.path).toBe(destinationPath);
+            
+            // Verify source file is deleted
+            expect(vi.mocked(fs.promises.unlink)).toHaveBeenCalledWith(path.join(__dirname, 'test', 'example.txt'));
+        });
+
+        it('should return new file instance after moveToS3', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const bucket = 'test-bucket';
+            const key = 'test-key.txt';
+            
+            const newFile = await sourceFile.moveToS3(bucket, key);
+            
+            expect(newFile).toBeInstanceOf(File);
+            expect(newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
+            
+            // Verify source file is deleted
+            expect(vi.mocked(fs.promises.unlink)).toHaveBeenCalledWith(path.join(__dirname, 'test', 'example.txt'));
         });
     });
 
@@ -649,6 +801,75 @@ describe('#File', () => {
             vi.mocked(s3Client.send).mockRejectedValue(new Error('S3 error'));
 
             await expect(File.createFromS3(bucket, key)).rejects.toThrow('S3 error');
+        });
+
+        it('should handle S3 file source', async () => {
+            const file = await File.createFromS3('test-bucket', 'test-key.txt');
+            expect(file.source).toBe(FileSource.S3);
+            expect(file.metadata.url).toBe('s3://test-bucket/test-key.txt');
+        });
+
+        it('should move file and return new file instance', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const destinationPath = path.join(__dirname, 'test', 'destination.txt');
+            
+            const newFile = await sourceFile.moveTo(destinationPath);
+            
+            expect(newFile).toBeInstanceOf(File);
+            expect(newFile.toString()).toContain(FileSource.File);
+            expect(newFile.metadata.path).toBe(destinationPath);
+            expect(newFile.metadata.name).toBe('destination.txt');
+        });
+
+        it('should copy file and return new file instance', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const destinationPath = path.join(__dirname, 'test', 'destination.txt');
+            
+            const result = await sourceFile.saveToFile(destinationPath);
+            
+            expect(result.original).toBe(sourceFile);
+            expect(result.newFile).toBeInstanceOf(File);
+            expect(result.newFile.toString()).toContain(FileSource.File);
+            expect(result.newFile.metadata.path).toBe(destinationPath);
+            expect(result.newFile.metadata.name).toBe('destination.txt');
+        });
+
+        it('should move file to S3 and return new S3 file instance', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const bucket = 'test-bucket';
+            const key = 'test-key.txt';
+            
+            const newFile = await sourceFile.moveToS3(bucket, key);
+            
+            expect(newFile).toBeInstanceOf(File);
+            expect(newFile.toString()).toContain(FileSource.S3);
+            expect(newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
+            expect(newFile.metadata.name).toBe('test-key.txt');
+        });
+
+        it('should copy file to S3 and return new S3 file instance', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const bucket = 'test-bucket';
+            const key = 'test-key.txt';
+            
+            const result = await sourceFile.saveToS3(bucket, key);
+            
+            expect(result.original).toBe(sourceFile);
+            expect(result.newFile).toBeInstanceOf(File);
+            expect(result.newFile.toString()).toContain(FileSource.S3);
+            expect(result.newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
+            expect(result.newFile.metadata.name).toBe('test-key.txt');
+        });
+
+        it('should get signed URL for S3 file', async () => {
+            const file = await File.createFromS3('test-bucket', 'test-key.txt');
+            const signedUrl = await file.getSignedUrl();
+            expect(signedUrl).toBe('https://signed-url.com/example.txt');
+        });
+
+        it('should throw error when getting signed URL for non-S3 file', async () => {
+            const file = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            await expect(file.getSignedUrl()).rejects.toThrow('Cannot generate signed URL for non-S3 file');
         });
     });
 
@@ -884,6 +1105,34 @@ describe('#File', () => {
             expect(file.lastModified).toBeUndefined();
             expect(file.createdAt).toBeUndefined();
         });
+    });
+
+    describe('metadata operations', () => {
+        it('should preserve original file stream after copy operation', async () => {
+            const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+            const destinationPath = path.join(__dirname, 'test', 'destination.txt');
+            
+            const { original, newFile } = await sourceFile.saveToFile(destinationPath);
+            
+            // Verify we can still read from the original file's stream
+            const bytes = await original.readFileBytes();
+            expect(bytes).toBeDefined();
+            expect(bytes.byteLength).toBeGreaterThan(0);
+        });
+    });
+
+    it('should save file to S3 and return both original and new file instances', async () => {
+        const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
+        const bucket = 'test-bucket';
+        const key = 'test-key.txt';
+        
+        const result = await sourceFile.saveToS3(bucket, key);
+        
+        expect(result.original).toBe(sourceFile);
+        expect(result.newFile).toBeInstanceOf(File);
+        expect(result.newFile.toString()).toContain(FileSource.S3);
+        expect(result.newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
+        expect(result.newFile.metadata.name).toBe('test-key.txt');
     });
 
     // TODO: Test from S3 URL
