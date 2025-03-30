@@ -11,17 +11,32 @@
         "type": "git",
         "url": "https://github.com/SmooAI/file.git"
     },
-    "files": [
-        "dist/**"
-    ],
     "license": "MIT",
     "author": {
         "name": "SmooAI",
         "email": "brent@smooai.com",
         "url": "https://smooai.com"
     },
-    "exports": {},
-    "main": "index.js",
+    "exports": {
+        "./File": {
+            "types": "./dist/File.d.ts",
+            "import": "./dist/File.mjs",
+            "require": "./dist/File.js",
+            "default": "./dist/File.js"
+        },
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js",
+            "default": "./dist/index.js"
+        }
+    },
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist/**"
+    ],
     "scripts": {
         "build": "pnpm create-entry-points -i \"src/**/*.ts\" && pnpm tsup",
         "check-all": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build",
