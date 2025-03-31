@@ -45,7 +45,8 @@
         "lint": "eslint src/",
         "lint:fix": "eslint src/ --fix",
         "prepare": "husky",
-        "test": "vitest run --passWithNoTests",
+        "test": "vitest run File.spec",
+        "test:integration": "vitest run File.integration.spec",
         "typecheck": "tsc --noEmit --skipLibCheck",
         "watch": "tsup --watch"
     },

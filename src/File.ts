@@ -17,9 +17,11 @@ const logger = new ServerLogger();
 
 const s3Client = new S3Client({ apiVersion: '2023-11-01' });
 
-const { toDetectionStream } = new FileTypeParser({
+const parser = new FileTypeParser({
     customDetectors: [detectXml],
 });
+
+const toDetectionStream = parser.toDetectionStream.bind(parser);
 
 export interface Metadata {
     name?: string;
@@ -114,6 +116,36 @@ export default class File {
         this.bytes = bytes;
     }
 
+    private clone(other: File): File {
+        this.fileSource = other.fileSource;
+        this.stream = other.stream;
+        this.metadata = other.metadata;
+        this.bytes = other.bytes; 
+        return this;
+    }
+
+    private async refresh() {
+        if (this.fileSource === FileSource.File && this.metadata.path) {
+            const newFile = await File.createFromFile(this.metadata.path);
+            this.clone(newFile);
+        } else if (this.fileSource === FileSource.S3 && this.metadata.url) {
+            const [bucket, key] = this.metadata.url.replace('s3://', '').split('/', 2);
+            const newFile = await File.createFromS3(bucket, key);
+            this.clone(newFile);
+        } else if (this.fileSource === FileSource.Url && this.metadata.url) {
+            const newFile = await File.createFromUrl(this.metadata.url);
+            this.clone(newFile);
+        } else if (this.fileSource === FileSource.Bytes && this.bytes) {
+            const newFile = await File.createFromBytes(this.bytes);
+            this.clone(newFile);
+        } else if (this.fileSource === FileSource.Stream && this.stream) {
+            const newFile = await File.createFromStream(this.stream);
+            this.clone(newFile);
+        } else {
+            throw new Error(`Cannot refresh file from source: ${this.fileSource}`);
+        }
+    }
+
     private static webStreamToNodeStream(webStream: ReadableStream): Readable {
         return new Readable({
             read() {
@@ -195,7 +227,7 @@ export default class File {
     }
 
     static async createFromFile(filePath: string, metadataHint?: MetadataHint): Promise<File> {
-        const nodeStream = fs.createReadStream(filePath).pause();
+        const nodeStream = new Readable().wrap(fs.createReadStream(filePath)).pause();
         const typedStream = await toDetectionStream(nodeStream);
 
         const metadata = await File.getFileMetadata({
@@ -256,7 +288,7 @@ export default class File {
 
             const disposition = contentDispositionValue ? contentDisposition.parse(contentDispositionValue) : undefined;
             name = disposition?.parameters?.filename ?? name;
-            size = Number(contentLength) || size;
+            size = contentLength !== null && contentLength !== undefined ? Number(contentLength) : size;
             mimeType = contentType ?? (name ? mime.lookup(name) || null : null) ?? mimeType;
 
             if (etag) {
@@ -281,7 +313,7 @@ export default class File {
 
             const disposition = contentDispositionValue ? contentDisposition.parse(contentDispositionValue) : undefined;
             name = disposition?.parameters?.filename ?? name;
-            size = Number(contentLength) || size;
+            size = contentLength !== null && contentLength !== undefined ? Number(contentLength) : size;
             mimeType = contentType ?? (name ? mime.lookup(name) || null : null) ?? mimeType;
 
             if (etag) {
@@ -303,7 +335,7 @@ export default class File {
             extension = fileType && fileType.ext ? fileType.ext : extension;
 
             const stats = await fs.promises.stat(path);
-            size = stats.size || size;
+            size = stats.size;
             lastModified = stats.mtime;
             createdAt = stats.birthtime;
 
@@ -345,16 +377,10 @@ export default class File {
         }
 
         const reader = this.stream;
-        const chunks: Uint8Array[] = [];
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-        }
-        const buffer = Buffer.concat(chunks);
-        this.bytes = buffer.buffer;
-        return new Uint8Array(buffer).buffer;
+        const buffer: Buffer | null = await reader.read();
+        this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
+        return new Uint8Array(this.bytes).buffer;
     }
 
     async readFileString(): Promise<string> {
@@ -375,45 +401,23 @@ export default class File {
         });
     }
 
-    private async cloneStream(): Promise<ReadableStream> {
-        const chunks: Uint8Array[] = [];
-        const reader = this.stream;
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-        }
-
-        return new ReadableStream({
-            start(controller) {
-                for (const chunk of chunks) {
-                    controller.enqueue(chunk);
-                }
-                controller.close();
-            },
-        });
-    }
-
     async saveToFile(destinationPath: string): Promise<{ original: File; newFile: File }> {
         const writeStream = fs.createWriteStream(destinationPath);
         await this.pipeTo(writeStream);
         return {
             original: this,
-            newFile: await File.createFromFile(destinationPath),
+            newFile: await File.createFromFile(destinationPath)
         };
     }
 
     async moveTo(destinationPath: string): Promise<File> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
-            await this.saveToFile(destinationPath);
+            const result = await this.saveToFile(destinationPath);
             await fs.promises.unlink(this.metadata.path);
-            this.metadata.path = destinationPath;
-            this.metadata.name = path.basename(destinationPath);
-            return File.createFromFile(destinationPath);
+            return result.newFile;
         } else {
-            await this.saveToFile(destinationPath);
-            return File.createFromFile(destinationPath);
+            const result = await this.saveToFile(destinationPath);
+            return result.newFile;
         }
     }
 
@@ -423,34 +427,47 @@ export default class File {
         }
     }
 
-    async pipeTo(destination: NodeJS.WritableStream): Promise<void> {
+    async pipeTo(destination: NodeJS.WritableStream, options: {
+        saveBytes?: boolean;
+    } = { saveBytes: true }): Promise<void> {
+        const { saveBytes } = options;
+        if (this.bytes) {
+            const buffer = Buffer.from(this.bytes);
+            return new Promise((resolve, reject) => {
+                destination.write(buffer, (err) => {
+                    if (err) reject(err);
+                    resolve();
+                });
+            });
+        }
+
         const reader = this.stream;
         const nodeStream = new Readable().wrap(reader);
-
+        
         return new Promise((resolve, reject) => {
             nodeStream.on('error', reject);
             destination.on('error', reject);
             destination.on('finish', resolve);
-
+            nodeStream.on('data', (chunk) => {
+                if (saveBytes) {
+                    this.bytes = Buffer.concat([!this.bytes ? Buffer.from([]) : Buffer.from(this.bytes), chunk]);
+                }
+            });
+            
             nodeStream.pipe(destination);
         });
     }
 
     async uploadToS3(bucket: string, key: string): Promise<void> {
         const reader = this.stream;
-        const chunks: Uint8Array[] = [];
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-        }
-        const buffer = Buffer.concat(chunks);
+    
+        const buffer: Buffer | null = await reader.read();
+        this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
 
         const command = new PutObjectCommand({
             Bucket: bucket,
             Key: key,
-            Body: buffer,
+            Body: Buffer.from(this.bytes),
             ContentType: this.metadata.mimeType,
             ContentLength: this.metadata.size,
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
@@ -471,12 +488,9 @@ export default class File {
         });
 
         await s3Client.send(command);
-
+        
         // Create new file instance
         const newFile = await File.createFromS3(bucket, key);
-
-        // Refresh the original file's stream based on source type
-        await this.refreshStream();
 
         return { original: this, newFile };
     }
@@ -553,18 +567,6 @@ export default class File {
         };
     }
 
-    async refreshMetadata(): Promise<void> {
-        if (this.fileSource === FileSource.File && this.metadata.path) {
-            const stats = await fs.promises.stat(this.metadata.path);
-            this.metadata = {
-                ...this.metadata,
-                size: stats.size,
-                lastModified: stats.mtime,
-                createdAt: stats.birthtime,
-            };
-        }
-    }
-
     async getStats(): Promise<fs.Stats | undefined> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             return await fs.promises.stat(this.metadata.path);
@@ -576,7 +578,7 @@ export default class File {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
             await fs.promises.appendFile(this.metadata.path, buffer);
-            await this.refreshMetadata();
+            await this.refresh();
         } else {
             throw new Error('Cannot append to non-file source');
         }
@@ -584,10 +586,10 @@ export default class File {
 
     async prepend(content: string | Buffer): Promise<void> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
-            const existingContent = await fs.promises.readFile(this.metadata.path);
+            const existingContent = Buffer.from(await this.readFileBytes());
             const newContent = Buffer.isBuffer(content) ? content : Buffer.from(content);
             await fs.promises.writeFile(this.metadata.path, Buffer.concat([newContent, existingContent]));
-            await this.refreshMetadata();
+            await this.refresh();
         } else {
             throw new Error('Cannot prepend to non-file source');
         }
@@ -596,7 +598,7 @@ export default class File {
     async truncate(size: number): Promise<void> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             await fs.promises.truncate(this.metadata.path, size);
-            await this.refreshMetadata();
+            await this.refresh();
         } else {
             throw new Error('Cannot truncate non-file source');
         }
@@ -614,54 +616,12 @@ export default class File {
         throw new Error('Cannot generate signed URL for non-S3 file');
     }
 
-    private async refreshStream(): Promise<void> {
-        switch (this.fileSource) {
-            case FileSource.File:
-                if (this.metadata.path) {
-                    const nodeStream = fs.createReadStream(this.metadata.path);
-                    this.stream = await toDetectionStream(nodeStream);
-                }
-                break;
-            case FileSource.S3:
-                if (this.metadata.url) {
-                    const [bucket, key] = this.metadata.url.replace('s3://', '').split('/', 2);
-                    const response = await s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
-                    const webStream = response.Body as unknown as ReadableStream;
-                    const nodeStream = File.webStreamToNodeStream(webStream);
-                    this.stream = await toDetectionStream(nodeStream);
-                }
-                break;
-            case FileSource.Url:
-                if (this.metadata.url) {
-                    const response = await fetch(this.metadata.url);
-                    const webStream = response.body as unknown as ReadableStream;
-                    const nodeStream = File.webStreamToNodeStream(webStream);
-                    this.stream = await toDetectionStream(nodeStream);
-                }
-                break;
-            case FileSource.Bytes:
-                if (this.bytes) {
-                    const nodeStream = new Readable();
-                    nodeStream.push(Buffer.from(this.bytes));
-                    nodeStream.push(null);
-                    this.stream = await toDetectionStream(nodeStream);
-                }
-                break;
-            case FileSource.Stream:
-                throw new Error('Cannot refresh generic stream after consumption');
-        }
-    }
-
     private async toBuffer(): Promise<Buffer> {
-        const chunks: Uint8Array[] = [];
         const reader = this.stream;
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-        }
-
-        return Buffer.concat(chunks);
+        const buffer: Buffer | null = await reader.read();
+        this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
+        
+        return Buffer.from(this.bytes);
     }
 }

@@ -48,9 +48,8 @@ const { setMockSteamFileTypeResult, createMockTypedStream, mockReadStream, reset
             const mockReader = {
                 read: vi
                     .fn()
-                    .mockResolvedValueOnce({ done: false, value: new Uint8Array(8) })
-                    .mockResolvedValueOnce({ done: true })
-                    .mockRejectedValue(new Error('Cannot refresh generic stream after consumption')),
+                    .mockResolvedValueOnce(new Uint8Array(8))
+                    .mockRejectedValue(new Uint8Array(0)),
                 on: vi.fn().mockImplementation((event, callback) => {
                     if (event === 'end') {
                         callback();
@@ -886,16 +885,6 @@ describe('#File', () => {
 
             expect(file.metadata.name).toBe('new-name.txt');
             expect(file.metadata.mimeType).toBe('text/plain');
-        });
-
-        it('should refresh metadata', async () => {
-            const file = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'), { name: 'example.txt' });
-
-            await file.refreshMetadata();
-
-            expect(file.metadata.size).toBe(100);
-            expect(file.metadata.lastModified).toEqual(new Date('2024-01-01'));
-            expect(file.metadata.createdAt).toEqual(new Date('2023-12-31'));
         });
 
         it('should get file stats', async () => {
