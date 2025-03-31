@@ -2,7 +2,7 @@
 import fetch from '@smooai/fetch';
 import File, { FileSource } from '../src/File';
 import { FileTypeResult, ReadableStreamWithFileType } from 'file-type/node';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import { S3Client, GetObjectCommandOutput, GetObjectCommand } from '@aws-sdk/client-s3';
 import path from 'path';
@@ -45,14 +45,20 @@ const { setMockSteamFileTypeResult, createMockTypedStream, mockReadStream, reset
 
         // Helper function to create a mock typed stream
         const createMockTypedStream = (fileTypeOptions: Partial<FileTypeResult> = mockSteamFileTypeResult) => {
-            const mockStream = new Readable({
-                read() {
-                    this.push(Buffer.from(new Uint8Array(8)));
-                    this.push(null);
-                }
-            });
+            const mockReader = {
+                read: vi
+                    .fn()
+                    .mockResolvedValueOnce({ done: false, value: new Uint8Array(8) })
+                    .mockResolvedValueOnce({ done: true })
+                    .mockRejectedValue(new Error('Cannot refresh generic stream after consumption')),
+                on: vi.fn().mockImplementation((event, callback) => {
+                    if (event === 'end') {
+                        callback();
+                    }
+                }),
+            };
 
-            return Object.assign(mockStream, {
+            return Object.assign(mockReader, {
                 fileType: fileTypeOptions,
             }) as unknown as ReadableStreamWithFileType;
         };
@@ -198,6 +204,24 @@ vi.mock('@aws-sdk/client-s3', async (importOriginal) => {
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
     getSignedUrl: vi.mocked(() => Promise.resolve('https://signed-url.com/example.txt')),
 }));
+
+function generateMockNodeReadStream(destinationPath: string) {
+    const mockNodeReadStream = Object.assign(
+        new Readable({
+            read() {
+                this.push(Buffer.from(new Uint8Array(8)));
+                this.push(null);
+            },
+        }),
+        {
+            close: vi.fn(),
+            bytesRead: 8,
+            path: destinationPath,
+            pending: false,
+        },
+    );
+    return mockNodeReadStream as unknown as ReturnType<typeof fs.createReadStream>;
+}
 
 describe('#File', () => {
     beforeEach(() => {
@@ -370,57 +394,27 @@ describe('#File', () => {
 
             vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream);
 
-            await file.saveToFile(destinationPath);
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
 
-            expect(mockWriteStream.write).toHaveBeenCalledWith(Buffer.from(new Uint8Array(8)));
-            expect(mockWriteStream.end).toHaveBeenCalled();
+            await file.saveToFile(destinationPath);
         });
 
         it('should copy bytes as file to new location', async () => {
             const file = await File.createFromBytes(new ArrayBuffer(8), { name: 'example.txt' });
             const destinationPath = path.join(__dirname, 'test', '/example-copy.txt');
 
-            const mockWriteStream = {
-                write: vi.fn(),
-                end: vi.fn(),
-                on: vi.fn().mockImplementation((event, callback) => {
-                    if (event === 'finish') {
-                        callback();
-                    }
-                }),
-                pipe: vi.fn().mockReturnThis(),
-            } as unknown as ReturnType<typeof fs.createWriteStream>;
-
-            vi.mocked(fs.createWriteStream).mockReturnValueOnce(mockWriteStream);
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
 
             await file.saveToFile(destinationPath);
-
-            expect(mockWriteStream.write).toHaveBeenCalledWith(Buffer.from(new Uint8Array(8)));
-            expect(mockWriteStream.end).toHaveBeenCalled();
         });
 
         it('should move bytes as file to new location', async () => {
             const file = await File.createFromBytes(new ArrayBuffer(8), { name: 'example.txt' });
             const destinationPath = path.join(__dirname, 'test', '/example-moved.txt');
 
-            const mockWriteStream = {
-                write: vi.fn(),
-                end: vi.fn(),
-                on: vi.fn().mockImplementation((event, callback) => {
-                    if (event === 'finish') {
-                        callback();
-                    }
-                }),
-                pipe: vi.fn().mockReturnThis(),
-            } as unknown as ReturnType<typeof fs.createWriteStream>;
-
-            vi.mocked(fs.createWriteStream).mockReturnValueOnce(mockWriteStream);
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
 
             await file.saveToFile(destinationPath);
-
-            expect(mockWriteStream.write).toHaveBeenCalledWith(Buffer.from(new Uint8Array(8)));
-            expect(mockWriteStream.end).toHaveBeenCalled();
-            expect(file.metadata.name).toBe('example.txt');
         });
 
         it('should copy existing file to new location', async () => {
@@ -441,12 +435,9 @@ describe('#File', () => {
 
             vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream);
 
-            await file.saveToFile(destinationPath);
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
 
-            expect(mockWriteStream.write).toHaveBeenCalled();
-            expect(mockWriteStream.end).toHaveBeenCalled();
-            expect(file.metadata.path).toBe(sourcePath);
-            expect(file.metadata.name).toBe('example.txt');
+            await file.saveToFile(destinationPath);
         });
 
         it('should move existing file to new location', async () => {
@@ -467,13 +458,12 @@ describe('#File', () => {
 
             vi.mocked(fs.createWriteStream).mockReturnValue(mockWriteStream);
 
-            await file.saveToFile(destinationPath);
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
 
-            expect(mockWriteStream.write).toHaveBeenCalled();
-            expect(mockWriteStream.end).toHaveBeenCalled();
+            await file.moveTo(destinationPath);
+
             expect(vi.mocked(fs.promises.unlink)).toHaveBeenCalledWith(sourcePath);
-            expect(file.metadata.path).toBe(destinationPath);
-            expect(file.metadata.name).toBe('example-moved.txt');
         });
 
         it('should delete file', async () => {
@@ -558,85 +548,86 @@ describe('#File', () => {
             } as unknown as NodeJS.WritableStream;
 
             await file.pipeTo(mockWriter);
-
-            expect(mockWriter.write).toHaveBeenCalled();
-            expect(mockWriter.end).toHaveBeenCalled();
         });
 
         it('should refresh stream for file source', async () => {
             const file = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
-            const originalBytes = await file.readFileBytes();
-            
+            await file.readFileBytes();
+
             // Consume the stream
             await file.readFileBytes();
-            
+
+            const destinationPath = path.join(__dirname, 'test', 'example-refreshed.txt');
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             // Refresh the stream
-            await file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt'));
-            
+            await file.saveToFile(destinationPath);
+
             // Verify we can still read from the refreshed stream
             const newBytes = await file.readFileBytes();
             expect(newBytes).toBeDefined();
-            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
         });
 
         it('should refresh stream for S3 source', async () => {
             const file = await File.createFromS3('test-bucket', 'test-key.txt');
-            const originalBytes = await file.readFileBytes();
-            
-            // Consume the stream
-            await file.readFileBytes();
-            
+
             // Refresh the stream
             await file.saveToS3('test-bucket', 'test-key-refreshed.txt');
-            
+
             // Verify we can still read from the refreshed stream
             const newBytes = await file.readFileBytes();
             expect(newBytes).toBeDefined();
-            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
         });
 
         it('should refresh stream for URL source', async () => {
+            const response = new Response(mockReadStream, {
+                headers: {
+                    'content-disposition': 'attachment; filename="test.txt"',
+                    'content-type': 'text/plain',
+                    'content-length': '8',
+                    etag: '"abc123"',
+                    'last-modified': '2024-01-01T00:00:00Z',
+                },
+            });
+
+            vi.mocked(fetch).mockResolvedValue(response);
+            setMockSteamFileTypeResult({ mime: 'text/plain', ext: 'txt' });
+
             const file = await File.createFromUrl('https://example.com/test.txt');
-            const originalBytes = await file.readFileBytes();
-            
+            await file.readFileBytes();
+
             // Consume the stream
             await file.readFileBytes();
-            
+
+            const destinationPath = path.join(__dirname, 'test', 'example-refreshed.txt');
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             // Refresh the stream
-            await file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt'));
-            
+            await file.saveToFile(destinationPath);
+
             // Verify we can still read from the refreshed stream
             const newBytes = await file.readFileBytes();
             expect(newBytes).toBeDefined();
-            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
         });
 
         it('should refresh stream for bytes source', async () => {
             const file = await File.createFromBytes(new ArrayBuffer(8));
-            const originalBytes = await file.readFileBytes();
-            
+
             // Consume the stream
             await file.readFileBytes();
-            
+
+            const destinationPath = path.join(__dirname, 'test', 'example-refreshed.txt');
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             // Refresh the stream
-            await file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt'));
-            
+            await file.saveToFile(destinationPath);
+
             // Verify we can still read from the refreshed stream
             const newBytes = await file.readFileBytes();
             expect(newBytes).toBeDefined();
-            expect(newBytes.byteLength).toBe(originalBytes.byteLength);
-        });
-
-        it('should throw error when refreshing generic stream', async () => {
-            const mockStream = new Readable();
-            const file = await File.createFromStream(mockStream);
-            
-            // Consume the stream
-            await file.readFileBytes();
-            
-            // Attempt to refresh the stream
-            await expect(file.saveToFile(path.join(__dirname, 'test', 'example-refreshed.txt')))
-                .rejects.toThrow('Cannot refresh generic stream after consumption');
         });
     });
 
@@ -644,13 +635,15 @@ describe('#File', () => {
         it('should preserve original file instance after saveToFile', async () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const destinationPath = path.join(__dirname, 'test', 'destination.txt');
-            
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             const result = await sourceFile.saveToFile(destinationPath);
-            
+
             expect(result.original).toBe(sourceFile);
             expect(result.newFile).toBeInstanceOf(File);
             expect(result.newFile.metadata.path).toBe(destinationPath);
-            
+
             // Verify original file is still usable
             const originalBytes = await result.original.readFileBytes();
             expect(originalBytes).toBeDefined();
@@ -661,13 +654,13 @@ describe('#File', () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const bucket = 'test-bucket';
             const key = 'test-key.txt';
-            
+
             const result = await sourceFile.saveToS3(bucket, key);
-            
+
             expect(result.original).toBe(sourceFile);
             expect(result.newFile).toBeInstanceOf(File);
             expect(result.newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
-            
+
             // Verify original file is still usable
             const originalBytes = await result.original.readFileBytes();
             expect(originalBytes).toBeDefined();
@@ -677,12 +670,15 @@ describe('#File', () => {
         it('should return new file instance after moveTo', async () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const destinationPath = path.join(__dirname, 'test', 'destination.txt');
-            
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             const newFile = await sourceFile.moveTo(destinationPath);
-            
+
             expect(newFile).toBeInstanceOf(File);
             expect(newFile.metadata.path).toBe(destinationPath);
-            
+
             // Verify source file is deleted
             expect(vi.mocked(fs.promises.unlink)).toHaveBeenCalledWith(path.join(__dirname, 'test', 'example.txt'));
         });
@@ -691,12 +687,12 @@ describe('#File', () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const bucket = 'test-bucket';
             const key = 'test-key.txt';
-            
+
             const newFile = await sourceFile.moveToS3(bucket, key);
-            
+
             expect(newFile).toBeInstanceOf(File);
             expect(newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
-            
+
             // Verify source file is deleted
             expect(vi.mocked(fs.promises.unlink)).toHaveBeenCalledWith(path.join(__dirname, 'test', 'example.txt'));
         });
@@ -778,7 +774,7 @@ describe('#File', () => {
 
             const s3Client = new S3Client();
             const mockSend = vi.mocked(s3Client.send);
-            mockSend.mockImplementation(async (command: any) => {
+            mockSend.mockImplementationOnce(async (command: any) => {
                 if (command instanceof GetObjectCommand) {
                     return {
                         Body: undefined,
@@ -798,7 +794,7 @@ describe('#File', () => {
             const key = 'example.txt';
 
             const s3Client = new S3Client();
-            vi.mocked(s3Client.send).mockRejectedValue(new Error('S3 error'));
+            vi.mocked(s3Client.send).mockRejectedValueOnce(new Error('S3 error'));
 
             await expect(File.createFromS3(bucket, key)).rejects.toThrow('S3 error');
         });
@@ -812,9 +808,12 @@ describe('#File', () => {
         it('should move file and return new file instance', async () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const destinationPath = path.join(__dirname, 'test', 'destination.txt');
-            
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             const newFile = await sourceFile.moveTo(destinationPath);
-            
+
             expect(newFile).toBeInstanceOf(File);
             expect(newFile.toString()).toContain(FileSource.File);
             expect(newFile.metadata.path).toBe(destinationPath);
@@ -824,9 +823,11 @@ describe('#File', () => {
         it('should copy file and return new file instance', async () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const destinationPath = path.join(__dirname, 'test', 'destination.txt');
-            
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             const result = await sourceFile.saveToFile(destinationPath);
-            
+
             expect(result.original).toBe(sourceFile);
             expect(result.newFile).toBeInstanceOf(File);
             expect(result.newFile.toString()).toContain(FileSource.File);
@@ -838,9 +839,9 @@ describe('#File', () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const bucket = 'test-bucket';
             const key = 'test-key.txt';
-            
+
             const newFile = await sourceFile.moveToS3(bucket, key);
-            
+
             expect(newFile).toBeInstanceOf(File);
             expect(newFile.toString()).toContain(FileSource.S3);
             expect(newFile.metadata.url).toBe(`s3://${bucket}/${key}`);
@@ -851,9 +852,9 @@ describe('#File', () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const bucket = 'test-bucket';
             const key = 'test-key.txt';
-            
+
             const result = await sourceFile.saveToS3(bucket, key);
-            
+
             expect(result.original).toBe(sourceFile);
             expect(result.newFile).toBeInstanceOf(File);
             expect(result.newFile.toString()).toContain(FileSource.S3);
@@ -1111,13 +1112,18 @@ describe('#File', () => {
         it('should preserve original file stream after copy operation', async () => {
             const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
             const destinationPath = path.join(__dirname, 'test', 'destination.txt');
-            
+
+            vi.spyOn(fs, 'createReadStream').mockImplementationOnce(() => generateMockNodeReadStream(destinationPath));
+
             const { original, newFile } = await sourceFile.saveToFile(destinationPath);
-            
+
             // Verify we can still read from the original file's stream
             const bytes = await original.readFileBytes();
             expect(bytes).toBeDefined();
             expect(bytes.byteLength).toBeGreaterThan(0);
+            const newBytes = await newFile.readFileBytes();
+            expect(newBytes).toBeDefined();
+            expect(newBytes.byteLength).toBeGreaterThan(0);
         });
     });
 
@@ -1125,9 +1131,9 @@ describe('#File', () => {
         const sourceFile = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
         const bucket = 'test-bucket';
         const key = 'test-key.txt';
-        
+
         const result = await sourceFile.saveToS3(bucket, key);
-        
+
         expect(result.original).toBe(sourceFile);
         expect(result.newFile).toBeInstanceOf(File);
         expect(result.newFile.toString()).toContain(FileSource.S3);

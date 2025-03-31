@@ -241,6 +241,7 @@ export default class File {
 
         let stream = options.stream;
         if (!stream && response?.body) {
+            // @smooai/fetch should provide a Web ReadableStream
             const nodeStream = new Readable().wrap(response.body as unknown as NodeJS.ReadableStream).pause();
             stream = await toDetectionStream(nodeStream);
         }
@@ -377,20 +378,20 @@ export default class File {
     private async cloneStream(): Promise<ReadableStream> {
         const chunks: Uint8Array[] = [];
         const reader = this.stream;
-        
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             chunks.push(value);
         }
-        
+
         return new ReadableStream({
             start(controller) {
                 for (const chunk of chunks) {
                     controller.enqueue(chunk);
                 }
                 controller.close();
-            }
+            },
         });
     }
 
@@ -399,7 +400,7 @@ export default class File {
         await this.pipeTo(writeStream);
         return {
             original: this,
-            newFile: await File.createFromFile(destinationPath)
+            newFile: await File.createFromFile(destinationPath),
         };
     }
 
@@ -425,12 +426,12 @@ export default class File {
     async pipeTo(destination: NodeJS.WritableStream): Promise<void> {
         const reader = this.stream;
         const nodeStream = new Readable().wrap(reader);
-        
+
         return new Promise((resolve, reject) => {
             nodeStream.on('error', reject);
             destination.on('error', reject);
             destination.on('finish', resolve);
-            
+
             nodeStream.pipe(destination);
         });
     }
@@ -470,7 +471,7 @@ export default class File {
         });
 
         await s3Client.send(command);
-        
+
         // Create new file instance
         const newFile = await File.createFromS3(bucket, key);
 
@@ -654,13 +655,13 @@ export default class File {
     private async toBuffer(): Promise<Buffer> {
         const chunks: Uint8Array[] = [];
         const reader = this.stream;
-        
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             chunks.push(value);
         }
-        
+
         return Buffer.concat(chunks);
     }
 }
