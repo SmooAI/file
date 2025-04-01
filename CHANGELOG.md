@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.0.5
+
+### Patch Changes
+
+- a0b764f: Added JSDoc to public interfaces.
+
 ## 1.0.4
 
 ### Patch Changes
