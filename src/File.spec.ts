@@ -9,119 +9,129 @@ import path from 'path';
 import { detectXml } from '@file-type/xml';
 import { Readable } from 'stream';
 
-// Helper function to create a mock S3Client
-function createMockS3Client(): S3Client {
-    return {
-        send: vi.fn().mockImplementation(async (command: any) => {
-            if (command instanceof GetObjectCommand) {
-                return {
-                    Body: new ReadableStream(),
-                    ContentType: 'text/plain',
-                    ContentLength: 1024,
-                    LastModified: new Date('2024-01-01'),
-                } as GetObjectCommandOutput;
-            }
-            return undefined;
-        }),
-        config: {},
-        destroy: vi.fn(),
-        middlewareStack: { clone: vi.fn(), use: vi.fn(), remove: vi.fn(), addRelativeTo: vi.fn(), resolve: vi.fn() },
-    } as unknown as S3Client;
-}
+const {
+    setMockSteamFileTypeResult,
+    createMockTypedStream,
+    createMockReadStream,
+    resetMockSteamFileTypeResult,
+    mockWriteStream,
+    mockSteamFileTypeResult,
+    mockStreamContent,
+    setMockStreamContent,
+    resetMockStreamContent,
+} = vi.hoisted(() => {
+    const mockSteamFileTypeResult: Partial<Writable<FileTypeResult> & { useActual: boolean }> = { mime: 'text/plain', ext: 'txt', useActual: false };
+    let mockStreamContent = new Uint8Array(8);
+    const setMockSteamFileTypeResult = (
+        fileTypeResult: Partial<Writable<FileTypeResult> & { useActual: boolean }> = { mime: 'text/plain', ext: 'txt', useActual: false },
+    ) => {
+        mockSteamFileTypeResult.mime = fileTypeResult.mime;
+        mockSteamFileTypeResult.ext = fileTypeResult.ext;
+        mockSteamFileTypeResult.useActual = fileTypeResult.useActual;
+    };
+    const resetMockSteamFileTypeResult = () => {
+        setMockSteamFileTypeResult();
+    };
 
-const { setMockSteamFileTypeResult, createMockTypedStream, mockReadStream, resetMockSteamFileTypeResult, mockWriteStream, mockSteamFileTypeResult } =
-    vi.hoisted(() => {
-        const mockSteamFileTypeResult: Partial<Writable<FileTypeResult> & { useActual: boolean }> = { mime: 'text/plain', ext: 'txt', useActual: false };
-        const setMockSteamFileTypeResult = (
-            fileTypeResult: Partial<Writable<FileTypeResult> & { useActual: boolean }> = { mime: 'text/plain', ext: 'txt', useActual: false },
-        ) => {
-            mockSteamFileTypeResult.mime = fileTypeResult.mime;
-            mockSteamFileTypeResult.ext = fileTypeResult.ext;
-            mockSteamFileTypeResult.useActual = fileTypeResult.useActual;
-        };
-        const resetMockSteamFileTypeResult = () => {
-            setMockSteamFileTypeResult();
-        };
+    const setMockStreamContent = (content: Uint8Array) => {
+        mockStreamContent = content;
+    };
+    const resetMockStreamContent = () => {
+        setMockStreamContent(new Uint8Array(8));
+    };
 
-        // Helper function to create a mock typed stream
-        const createMockTypedStream = (fileTypeOptions: Partial<FileTypeResult> = mockSteamFileTypeResult) => {
-            const mockReader = {
-                read: vi
-                    .fn()
-                    .mockResolvedValueOnce(new Uint8Array(8))
-                    .mockRejectedValue(new Uint8Array(0)),
-                on: vi.fn().mockImplementation((event, callback) => {
-                    if (event === 'end') {
-                        callback();
-                    }
-                }),
-            };
-
-            return Object.assign(mockReader, {
-                fileType: fileTypeOptions,
-            }) as unknown as ReadableStreamWithFileType;
-        };
-
-        const mockReadStream = new ReadableStream();
-
-        const mockWriteStream = {
-            write: vi.fn(),
-            end: vi.fn(),
+    const createMockReadStream = () => {
+        const mockReader = {
+            read: vi.fn().mockResolvedValueOnce(new Uint8Array(8)).mockRejectedValue(new Uint8Array(0)),
             on: vi.fn().mockImplementation((event, callback) => {
-                if (event === 'finish') {
+                if (event === 'end') {
                     callback();
                 }
             }),
-            pipe: vi.fn().mockReturnThis(),
-            unpipe: vi.fn(),
-            cork: vi.fn(),
-            uncork: vi.fn(),
-            setDefaultEncoding: vi.fn(),
-            getDefaultEncoding: vi.fn(),
-            destroy: vi.fn(),
-            addListener: vi.fn(),
-            emit: vi.fn(),
-            eventNames: vi.fn(),
-            getMaxListeners: vi.fn(),
-            listenerCount: vi.fn(),
-            listeners: vi.fn(),
-            off: vi.fn(),
-            once: vi.fn(),
-            prependListener: vi.fn(),
-            prependOnceListener: vi.fn(),
-            rawListeners: vi.fn(),
-            removeAllListeners: vi.fn(),
-            removeListener: vi.fn(),
-            setMaxListeners: vi.fn(),
-            bytesWritten: 0,
-            path: '',
-            pending: false,
-            writable: true,
-            writableEnded: false,
-            writableFinished: false,
-            writableHighWaterMark: 0,
-            writableLength: 0,
-            writableObjectMode: false,
-            writableCorked: 0,
-            destroyed: false,
-            closed: false,
-            errored: null,
-            writableNeedDrain: false,
-            _write: vi.fn(),
-            _writev: vi.fn(),
-            _destroy: vi.fn(),
-            _final: vi.fn(),
-        } as unknown as fs.WriteStream;
-
-        return {
-            mockSteamFileTypeResult,
-            setMockSteamFileTypeResult,
-            createMockTypedStream,
-            mockReadStream,
-            resetMockSteamFileTypeResult,
-            mockWriteStream,
         };
-    });
+
+        return mockReader as unknown as Readable;
+    };
+
+    // Helper function to create a mock typed stream
+    const createMockTypedStream = (fileTypeOptions: Partial<FileTypeResult> = mockSteamFileTypeResult, content: Uint8Array = mockStreamContent) => {
+        const mockReader = {
+            read: vi.fn().mockResolvedValueOnce(content).mockRejectedValue(new Uint8Array(0)),
+            on: vi.fn().mockImplementation((event, callback) => {
+                if (event === 'end') {
+                    callback();
+                }
+            }),
+        };
+
+        return Object.assign(mockReader, {
+            fileType: fileTypeOptions,
+        }) as unknown as ReadableStreamWithFileType;
+    };
+
+    const mockWriteStream = {
+        write: vi.fn().mockImplementation((chunk, callback) => {
+            callback?.();
+        }),
+        end: vi.fn(),
+        on: vi.fn().mockImplementation((event, callback) => {
+            if (event === 'finish') {
+                callback();
+            }
+        }),
+        pipe: vi.fn().mockReturnThis(),
+        unpipe: vi.fn(),
+        cork: vi.fn(),
+        uncork: vi.fn(),
+        setDefaultEncoding: vi.fn(),
+        getDefaultEncoding: vi.fn(),
+        destroy: vi.fn(),
+        addListener: vi.fn(),
+        emit: vi.fn(),
+        eventNames: vi.fn(),
+        getMaxListeners: vi.fn(),
+        listenerCount: vi.fn(),
+        listeners: vi.fn(),
+        off: vi.fn(),
+        once: vi.fn(),
+        prependListener: vi.fn(),
+        prependOnceListener: vi.fn(),
+        rawListeners: vi.fn(),
+        removeAllListeners: vi.fn(),
+        removeListener: vi.fn(),
+        setMaxListeners: vi.fn(),
+        bytesWritten: 0,
+        path: '',
+        pending: false,
+        writable: true,
+        writableEnded: false,
+        writableFinished: false,
+        writableHighWaterMark: 0,
+        writableLength: 0,
+        writableObjectMode: false,
+        writableCorked: 0,
+        destroyed: false,
+        closed: false,
+        errored: null,
+        writableNeedDrain: false,
+        _write: vi.fn(),
+        _writev: vi.fn(),
+        _destroy: vi.fn(),
+        _final: vi.fn(),
+    } as unknown as fs.WriteStream;
+
+    return {
+        mockSteamFileTypeResult,
+        setMockSteamFileTypeResult,
+        createMockReadStream,
+        createMockTypedStream,
+        resetMockSteamFileTypeResult,
+        mockWriteStream,
+        mockStreamContent,
+        setMockStreamContent,
+        resetMockStreamContent,
+    };
+});
 
 // Mock fs
 vi.mock('fs', async (importOriginal) => {
@@ -162,10 +172,12 @@ vi.mock('fs', async (importOriginal) => {
     };
 });
 
-// Mock @smooai/fetch
-vi.mock('@smooai/fetch', () => ({
-    default: vi.fn(),
-}));
+function createMockFetch() {
+    // Mock @smooai/fetch
+    vi.mock('@smooai/fetch', () => ({
+        default: vi.fn(),
+    }));
+}
 
 type Writable<T> = {
     -readonly [P in keyof T]: T[P];
@@ -188,6 +200,26 @@ vi.mock('file-type/node', async (importOriginal) => {
         })),
     };
 });
+
+// Helper function to create a mock S3Client
+function createMockS3Client(): S3Client {
+    return {
+        send: vi.fn().mockImplementation(async (command: any) => {
+            if (command instanceof GetObjectCommand) {
+                return {
+                    Body: createMockReadStream(),
+                    ContentType: 'text/plain',
+                    ContentLength: 1024,
+                    LastModified: new Date('2024-01-01'),
+                } as GetObjectCommandOutput;
+            }
+            return undefined;
+        }),
+        config: {},
+        destroy: vi.fn(),
+        middlewareStack: { clone: vi.fn(), use: vi.fn(), remove: vi.fn(), addRelativeTo: vi.fn(), resolve: vi.fn() },
+    } as unknown as S3Client;
+}
 
 // Mock AWS SDK
 vi.mock('@aws-sdk/client-s3', async (importOriginal) => {
@@ -224,15 +256,17 @@ function generateMockNodeReadStream(destinationPath: string) {
 
 describe('#File', () => {
     beforeEach(() => {
+        createMockFetch();
         vi.mocked(fs.createWriteStream).mockImplementation(() => mockWriteStream);
     });
 
     afterEach(() => {
         resetMockSteamFileTypeResult();
+        resetMockStreamContent();
     });
 
     it('should return metadata with valid options', async () => {
-        const response = new Response(mockReadStream, {
+        const response = new Response(new ReadableStream(), {
             headers: {
                 'content-disposition': 'attachment; filename="example.txt"',
                 'content-type': 'text/plain',
@@ -274,7 +308,7 @@ describe('#File', () => {
             mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         });
 
-        const response = new Response(mockReadStream, {
+        const response = new Response(new ReadableStream(), {
             headers: {
                 'content-disposition': 'attachment; filename="example.docx"',
                 'content-type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -323,12 +357,10 @@ describe('#File', () => {
     it('should handle missing or invalid headers', async () => {
         const thisMockTypedStream = createMockTypedStream({});
 
-        const response = new Response(mockReadStream, {
+        const response = new Response(new ReadableStream(), {
             headers: {},
             status: 200,
         });
-
-        vi.mocked(fetch).mockResolvedValue(response);
 
         const metadata = await File.getFileMetadata({
             fileSource: FileSource.Url,
@@ -351,14 +383,14 @@ describe('#File', () => {
         setMockSteamFileTypeResult({ mime: 'image/png', ext: 'png' });
         const url = 'https://example.com/example.png';
 
-        const response = new Response(mockReadStream, {
+        const response = new Response(new ReadableStream(), {
             headers: {
                 'content-disposition': 'attachment; filename="example.png"',
                 'content-type': 'image/png',
             },
         });
 
-        vi.mocked(fetch).mockResolvedValue(response);
+        vi.mocked(fetch).mockResolvedValueOnce(response);
 
         const file = await File.createFromUrl(url, { size: 19463 });
 
@@ -381,7 +413,9 @@ describe('#File', () => {
             const destinationPath = path.join(__dirname, 'test', '/example-save-to-disk.txt');
 
             const mockWriteStream = {
-                write: vi.fn(),
+                write: vi.fn().mockImplementation((_chunk, callback) => {
+                    callback?.();
+                }),
                 end: vi.fn(),
                 on: vi.fn().mockImplementation((event, callback) => {
                     if (event === 'finish') {
@@ -422,7 +456,9 @@ describe('#File', () => {
             const destinationPath = path.join(__dirname, 'test', '/example-copy.txt');
 
             const mockWriteStream = {
-                write: vi.fn(),
+                write: vi.fn().mockImplementation((_chunk, callback) => {
+                    callback?.();
+                }),
                 end: vi.fn(),
                 on: vi.fn().mockImplementation((event, callback) => {
                     if (event === 'finish') {
@@ -445,7 +481,9 @@ describe('#File', () => {
             const destinationPath = path.join(__dirname, 'test', '/example-moved.txt');
 
             const mockWriteStream = {
-                write: vi.fn(),
+                write: vi.fn().mockImplementation((_chunk, callback) => {
+                    callback?.();
+                }),
                 end: vi.fn(),
                 on: vi.fn().mockImplementation((event, callback) => {
                     if (event === 'finish') {
@@ -510,6 +548,7 @@ describe('#File', () => {
         });
 
         it('should prepend content to file', async () => {
+            setMockStreamContent(new Uint8Array(Buffer.from('existing content')));
             const file = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'), { name: 'example.txt' });
             const content = 'new content';
             const existingContent = Buffer.from('existing content');
@@ -537,7 +576,9 @@ describe('#File', () => {
         it('should pipe to writable stream', async () => {
             const file = await File.createFromBytes(new ArrayBuffer(8), { name: 'example.txt' });
             const mockWriter = {
-                write: vi.fn(),
+                write: vi.fn().mockImplementation((chunk, callback) => {
+                    callback?.();
+                }),
                 end: vi.fn(),
                 on: vi.fn().mockImplementation((event, callback) => {
                     if (event === 'finish') {
@@ -551,9 +592,6 @@ describe('#File', () => {
 
         it('should refresh stream for file source', async () => {
             const file = await File.createFromFile(path.join(__dirname, 'test', 'example.txt'));
-            await file.readFileBytes();
-
-            // Consume the stream
             await file.readFileBytes();
 
             const destinationPath = path.join(__dirname, 'test', 'example-refreshed.txt');
@@ -580,7 +618,7 @@ describe('#File', () => {
         });
 
         it('should refresh stream for URL source', async () => {
-            const response = new Response(mockReadStream, {
+            const response = new Response(new ReadableStream(), {
                 headers: {
                     'content-disposition': 'attachment; filename="test.txt"',
                     'content-type': 'text/plain',
@@ -590,13 +628,10 @@ describe('#File', () => {
                 },
             });
 
-            vi.mocked(fetch).mockResolvedValue(response);
+            vi.mocked(fetch).mockResolvedValueOnce(response);
             setMockSteamFileTypeResult({ mime: 'text/plain', ext: 'txt' });
 
             const file = await File.createFromUrl('https://example.com/test.txt');
-            await file.readFileBytes();
-
-            // Consume the stream
             await file.readFileBytes();
 
             const destinationPath = path.join(__dirname, 'test', 'example-refreshed.txt');
@@ -981,7 +1016,7 @@ describe('#File', () => {
     describe('metadata getters', () => {
         it('should return correct metadata values from URL file', async () => {
             const url = 'https://example.com/example.png';
-            const response = new Response(mockReadStream, {
+            const response = new Response(new ReadableStream(), {
                 headers: {
                     'content-disposition': 'attachment; filename="example.png"',
                     'content-type': 'image/png',
@@ -991,7 +1026,7 @@ describe('#File', () => {
                 },
             });
 
-            vi.mocked(fetch).mockResolvedValue(response);
+            vi.mocked(fetch).mockResolvedValueOnce(response);
             setMockSteamFileTypeResult({ mime: 'image/png', ext: 'png' });
 
             const file = await File.createFromUrl(url);
@@ -1012,10 +1047,10 @@ describe('#File', () => {
             const key = 'example.txt';
             const s3Client = new S3Client();
             const mockSend = vi.mocked(s3Client.send);
-            mockSend.mockImplementation(async (command: any) => {
+            mockSend.mockImplementationOnce(async (command: any) => {
                 if (command instanceof GetObjectCommand) {
                     return {
-                        Body: mockReadStream,
+                        Body: createMockReadStream(),
                         ContentType: 'text/plain',
                         ContentLength: 1024,
                         LastModified: new Date('2024-01-01'),

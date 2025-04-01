@@ -2,7 +2,7 @@
     "name": "@smooai/file",
     "version": "1.0.2",
     "private": true,
-    "description": "SmooAI Library Template",
+    "description": "A powerful file handling library for Node.js that provides a unified interface for working with files from local filesystem, S3, URLs, and more. Built with streaming in mind, it handles file bytes lazily where possible to minimize memory usage and improve performance.",
     "homepage": "https://github.com/SmooAI/file#readme",
     "bugs": {
         "url": "https://github.com/SmooAI/file/issues"
@@ -45,7 +45,7 @@
         "lint": "eslint src/",
         "lint:fix": "eslint src/ --fix",
         "prepare": "husky",
-        "test": "vitest run File.spec",
+        "test": "vitest run",
         "test:integration": "vitest run File.integration.spec",
         "typecheck": "tsc --noEmit --skipLibCheck",
         "watch": "tsup --watch"
@@ -74,6 +74,7 @@
         "eslint": "^9.21.0",
         "husky": "^9.1.7",
         "lint-staged": "^15.4.3",
+        "msw": "^2.7.3",
         "prettier": "^3.5.3",
         "prettier-plugin-packagejson": "^2.5.10",
         "tsup": "^8.4.0",
@@ -83,5 +84,8 @@
         "vitest": "^3.0.9",
         "vitest-tsconfig-paths": "^3.4.1"
     },
-    "packageManager": "pnpm@10.6.1+sha512.40ee09af407fa9fbb5fbfb8e1cb40fbb74c0af0c3e10e9224d7b53c7658528615b2c92450e74cfad91e3a2dcafe3ce4050d80bda71d757756d2ce2b66213e9a3"
+    "packageManager": "pnpm@10.6.1+sha512.40ee09af407fa9fbb5fbfb8e1cb40fbb74c0af0c3e10e9224d7b53c7658528615b2c92450e74cfad91e3a2dcafe3ce4050d80bda71d757756d2ce2b66213e9a3",
+    "publishConfig": {
+        "access": "public"
+    }
 }

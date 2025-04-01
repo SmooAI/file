@@ -120,7 +120,7 @@ export default class File {
         this.fileSource = other.fileSource;
         this.stream = other.stream;
         this.metadata = other.metadata;
-        this.bytes = other.bytes; 
+        this.bytes = other.bytes;
         return this;
     }
 
@@ -147,18 +147,22 @@ export default class File {
     }
 
     private static webStreamToNodeStream(webStream: ReadableStream): Readable {
+        // Create a single reader instance for the entire lifetime of the node stream.
+        const reader = webStream.getReader();
+
         return new Readable({
-            read() {
-                webStream
-                    .getReader()
-                    .read()
-                    .then(({ done, value }) => {
-                        if (done) {
-                            this.push(null);
-                        } else {
-                            this.push(Buffer.from(value));
-                        }
-                    });
+            async read() {
+                try {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        this.push(null);
+                    } else {
+                        // Ensure value is a Buffer; adjust if your data is already a Buffer
+                        this.push(Buffer.from(value));
+                    }
+                } catch (error) {
+                    this.destroy(error as Error);
+                }
             },
         });
     }
@@ -191,9 +195,7 @@ export default class File {
         const response = await s3Client.send(command);
         invariant(response.Body, 'Response body is missing');
 
-        const webStream = response.Body as unknown as ReadableStream;
-        const nodeStream = File.webStreamToNodeStream(webStream);
-        const typedStream = await toDetectionStream(nodeStream);
+        const typedStream = await toDetectionStream(new Readable().wrap(response.Body as unknown as NodeJS.ReadableStream));
 
         const metadata = await File.getFileMetadata({
             metadataHint: {
@@ -253,6 +255,22 @@ export default class File {
         return new File(FileSource.Stream, typedStream, metadata);
     }
 
+    private static getFilenameFromUrl(urlString: string | undefined): string | null {
+        if (!urlString) {
+            return null;
+        }
+
+        try {
+            const url = new URL(urlString);
+            const pathname = url.pathname;
+            const filename = path.basename(pathname);
+            // Return filename if it's non-empty and not just a directory indicator
+            return filename && filename !== '/' ? filename : null;
+        } catch (_error) {
+            return null;
+        }
+    }
+
     static async getFileMetadata(options: {
         fileSource: FileSource;
         metadataHint?: MetadataHint;
@@ -287,7 +305,7 @@ export default class File {
             const contentMD5 = response.headers.get('content-md5');
 
             const disposition = contentDispositionValue ? contentDisposition.parse(contentDispositionValue) : undefined;
-            name = disposition?.parameters?.filename ?? name;
+            name = disposition?.parameters?.filename ?? File.getFilenameFromUrl(url) ?? name;
             size = contentLength !== null && contentLength !== undefined ? Number(contentLength) : size;
             mimeType = contentType ?? (name ? mime.lookup(name) || null : null) ?? mimeType;
 
@@ -406,7 +424,7 @@ export default class File {
         await this.pipeTo(writeStream);
         return {
             original: this,
-            newFile: await File.createFromFile(destinationPath)
+            newFile: await File.createFromFile(destinationPath),
         };
     }
 
@@ -427,9 +445,12 @@ export default class File {
         }
     }
 
-    async pipeTo(destination: NodeJS.WritableStream, options: {
-        saveBytes?: boolean;
-    } = { saveBytes: true }): Promise<void> {
+    async pipeTo(
+        destination: NodeJS.WritableStream,
+        options: {
+            saveBytes?: boolean;
+        } = { saveBytes: true },
+    ): Promise<void> {
         const { saveBytes } = options;
         if (this.bytes) {
             const buffer = Buffer.from(this.bytes);
@@ -443,7 +464,7 @@ export default class File {
 
         const reader = this.stream;
         const nodeStream = new Readable().wrap(reader);
-        
+
         return new Promise((resolve, reject) => {
             nodeStream.on('error', reject);
             destination.on('error', reject);
@@ -453,14 +474,14 @@ export default class File {
                     this.bytes = Buffer.concat([!this.bytes ? Buffer.from([]) : Buffer.from(this.bytes), chunk]);
                 }
             });
-            
+
             nodeStream.pipe(destination);
         });
     }
 
     async uploadToS3(bucket: string, key: string): Promise<void> {
         const reader = this.stream;
-    
+
         const buffer: Buffer | null = await reader.read();
         this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
 
@@ -488,7 +509,7 @@ export default class File {
         });
 
         await s3Client.send(command);
-        
+
         // Create new file instance
         const newFile = await File.createFromS3(bucket, key);
 
@@ -621,7 +642,7 @@ export default class File {
 
         const buffer: Buffer | null = await reader.read();
         this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
-        
+
         return Buffer.from(this.bytes);
     }
 }
