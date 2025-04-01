@@ -23,6 +23,22 @@ const parser = new FileTypeParser({
 
 const toDetectionStream = parser.toDetectionStream.bind(parser);
 
+/**
+ * Represents metadata about a file including its properties and attributes.
+ * @interface
+ * @example
+ * const metadata: Metadata = {
+ *   name: 'example.txt',
+ *   mimeType: 'text/plain',
+ *   size: 1024,
+ *   extension: 'txt',
+ *   url: 'https://example.com/file.txt',
+ *   path: '/path/to/file.txt',
+ *   hash: 'abc123',
+ *   lastModified: new Date(),
+ *   createdAt: new Date()
+ * };
+ */
 export interface Metadata {
     name?: string;
     mimeType?: string;
@@ -36,8 +52,27 @@ export interface Metadata {
     createdAt?: Date;
 }
 
+/**
+ * A partial set of metadata properties that can be used as hints when creating a file.
+ * @type {Partial<Metadata>}
+ * @example
+ * const hint: MetadataHint = {
+ *   name: 'document.pdf',
+ *   mimeType: 'application/pdf'
+ * };
+ */
 export type MetadataHint = Partial<Metadata>;
 
+/**
+ * Enumeration of possible file sources.
+ * @enum {string}
+ * @example
+ * const source = FileSource.Url; // For files loaded from URLs
+ * const source = FileSource.Bytes; // For files created from byte arrays
+ * const source = FileSource.File; // For files from the filesystem
+ * const source = FileSource.Stream; // For files from streams
+ * const source = FileSource.S3; // For files from Amazon S3
+ */
 export enum FileSource {
     Url = 'Url',
     Bytes = 'Bytes',
@@ -46,6 +81,26 @@ export enum FileSource {
     S3 = 'S3',
 }
 
+/**
+ * A class representing a file with various operations and properties.
+ * This class provides methods to create, read, write, and manipulate files from different sources.
+ * @class
+ * @example
+ * // Create a file from URL
+ * const file = await File.createFromUrl('https://example.com/file.txt');
+ *
+ * // Create a file from local filesystem
+ * const file = await File.createFromFile('/path/to/file.txt');
+ *
+ * // Create a file from S3
+ * const file = await File.createFromS3('my-bucket', 'path/to/file.txt');
+ *
+ * // Create a file from bytes
+ * const file = await File.createFromBytes(new Uint8Array([1, 2, 3]));
+ *
+ * // Create a file from stream
+ * const file = await File.createFromStream(readableStream);
+ */
 export default class File {
     private fileSource!: FileSource;
     private _stream!: ReadableStreamWithFileType;
@@ -167,6 +222,14 @@ export default class File {
         });
     }
 
+    /**
+     * Creates a new File instance from a URL.
+     * @param {string} url - The URL to load the file from
+     * @param {MetadataHint} [metadataHint] - Optional metadata hints
+     * @returns {Promise<File>} A new File instance
+     * @example
+     * const file = await File.createFromUrl('https://example.com/file.txt');
+     */
     static async createFromUrl(url: string, metadataHint?: MetadataHint): Promise<File> {
         const response = await fetch(url);
         invariant(response.body, 'Response body is missing');
@@ -187,6 +250,15 @@ export default class File {
         return new File(FileSource.Url, typedStream, metadata);
     }
 
+    /**
+     * Creates a new File instance from an S3 bucket and key.
+     * @param {string} bucket - The S3 bucket name
+     * @param {string} key - The S3 object key
+     * @param {MetadataHint} [metadataHint] - Optional metadata hints
+     * @returns {Promise<File>} A new File instance
+     * @example
+     * const file = await File.createFromS3('my-bucket', 'path/to/file.txt');
+     */
     static async createFromS3(bucket: string, key: string, metadataHint?: MetadataHint): Promise<File> {
         const command = new GetObjectCommand({
             Bucket: bucket,
@@ -210,6 +282,14 @@ export default class File {
         return new File(FileSource.S3, typedStream, metadata);
     }
 
+    /**
+     * Creates a new File instance from a byte array.
+     * @param {ArrayBuffer} bytes - The byte array to create the file from
+     * @param {MetadataHint} [metadataHint] - Optional metadata hints
+     * @returns {Promise<File>} A new File instance
+     * @example
+     * const file = await File.createFromBytes(new Uint8Array([1, 2, 3]));
+     */
     static async createFromBytes(bytes: ArrayBuffer, metadataHint?: MetadataHint): Promise<File> {
         const nodeStream = new Readable();
         nodeStream.push(Buffer.from(bytes));
@@ -228,6 +308,14 @@ export default class File {
         return new File(FileSource.Bytes, typedStream, metadata, bytes);
     }
 
+    /**
+     * Creates a new File instance from a local file path.
+     * @param {string} filePath - The path to the local file
+     * @param {MetadataHint} [metadataHint] - Optional metadata hints
+     * @returns {Promise<File>} A new File instance
+     * @example
+     * const file = await File.createFromFile('/path/to/file.txt');
+     */
     static async createFromFile(filePath: string, metadataHint?: MetadataHint): Promise<File> {
         const nodeStream = new Readable().wrap(fs.createReadStream(filePath)).pause();
         const typedStream = await toDetectionStream(nodeStream);
@@ -244,6 +332,14 @@ export default class File {
         return new File(FileSource.File, typedStream, metadata);
     }
 
+    /**
+     * Creates a new File instance from a readable stream.
+     * @param {NodeJS.ReadableStream} stream - The readable stream
+     * @param {MetadataHint} [metadataHint] - Optional metadata hints
+     * @returns {Promise<File>} A new File instance
+     * @example
+     * const file = await File.createFromStream(readableStream);
+     */
     static async createFromStream(stream: NodeJS.ReadableStream, metadataHint?: MetadataHint): Promise<File> {
         const nodeStream = new Readable().wrap(stream).pause();
         const typedStream = await toDetectionStream(nodeStream);
@@ -389,6 +485,12 @@ export default class File {
         };
     }
 
+    /**
+     * Reads the file contents as bytes.
+     * @returns {Promise<ArrayBuffer>} The file contents as an ArrayBuffer
+     * @example
+     * const bytes = await file.readFileBytes();
+     */
     async readFileBytes(): Promise<ArrayBuffer> {
         if (this.bytes) {
             return this.bytes;
@@ -401,17 +503,36 @@ export default class File {
         return new Uint8Array(this.bytes).buffer;
     }
 
+    /**
+     * Reads the file contents as a string.
+     * @returns {Promise<string>} The file contents as a UTF-8 string
+     * @example
+     * const content = await file.readFileString();
+     */
     async readFileString(): Promise<string> {
         const bytes = Buffer.from(await this.readFileBytes());
         return bytes.toString('utf-8');
     }
 
+    /**
+     * Converts the file to a FormData object.
+     * @param {string} [attrName='file'] - The name of the form field
+     * @returns {Promise<FormData>} A FormData object containing the file
+     * @example
+     * const formData = await file.toFormData('document');
+     */
     async toFormData(attrName = 'file'): Promise<FormData> {
         const form = new FormData();
         form.append(attrName, new FormDataFile([await this.readFileBytes()], this.metadata.name ?? ''));
         return form;
     }
 
+    /**
+     * Returns a string representation of the file.
+     * @returns {string} A JSON string containing the file metadata
+     * @example
+     * console.log(file.toString());
+     */
     toString(): string {
         return JSON.stringify({
             ...this.metadata,
@@ -419,6 +540,13 @@ export default class File {
         });
     }
 
+    /**
+     * Saves the file to a new location on the filesystem.
+     * @param {string} destinationPath - The path where the file should be saved
+     * @returns {Promise<{original: File, newFile: File}>} The original and new file instances
+     * @example
+     * const { original, newFile } = await file.saveToFile('/path/to/new/location.txt');
+     */
     async saveToFile(destinationPath: string): Promise<{ original: File; newFile: File }> {
         const writeStream = fs.createWriteStream(destinationPath);
         await this.pipeTo(writeStream);
@@ -428,6 +556,13 @@ export default class File {
         };
     }
 
+    /**
+     * Moves the file to a new location on the filesystem.
+     * @param {string} destinationPath - The new path for the file
+     * @returns {Promise<File>} The new file instance
+     * @example
+     * const newFile = await file.moveTo('/path/to/new/location.txt');
+     */
     async moveTo(destinationPath: string): Promise<File> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             const result = await this.saveToFile(destinationPath);
@@ -439,12 +574,27 @@ export default class File {
         }
     }
 
+    /**
+     * Deletes the file from the filesystem.
+     * @returns {Promise<void>}
+     * @example
+     * await file.delete();
+     */
     async delete(): Promise<void> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             await fs.promises.unlink(this.metadata.path);
         }
     }
 
+    /**
+     * Pipes the file contents to a writable stream.
+     * @param {NodeJS.WritableStream} destination - The destination writable stream
+     * @param {Object} options - Pipe options
+     * @param {boolean} [options.saveBytes=true] - Whether to save the bytes in memory
+     * @returns {Promise<void>}
+     * @example
+     * await file.pipeTo(writableStream);
+     */
     async pipeTo(
         destination: NodeJS.WritableStream,
         options: {
@@ -479,6 +629,14 @@ export default class File {
         });
     }
 
+    /**
+     * Uploads the file to an S3 bucket.
+     * @param {string} bucket - The S3 bucket name
+     * @param {string} key - The S3 object key
+     * @returns {Promise<void>}
+     * @example
+     * await file.uploadToS3('my-bucket', 'path/to/file.txt');
+     */
     async uploadToS3(bucket: string, key: string): Promise<void> {
         const reader = this.stream;
 
@@ -497,6 +655,14 @@ export default class File {
         await s3Client.send(command);
     }
 
+    /**
+     * Saves the file to S3 and returns both the original and new file instances.
+     * @param {string} bucket - The S3 bucket name
+     * @param {string} key - The S3 object key
+     * @returns {Promise<{original: File, newFile: File}>} The original and new file instances
+     * @example
+     * const { original, newFile } = await file.saveToS3('my-bucket', 'path/to/file.txt');
+     */
     async saveToS3(bucket: string, key: string): Promise<{ original: File; newFile: File }> {
         // Upload to S3 and create new file instance
         const command = new PutObjectCommand({
@@ -516,6 +682,14 @@ export default class File {
         return { original: this, newFile };
     }
 
+    /**
+     * Moves the file to S3 and returns the new file instance.
+     * @param {string} bucket - The S3 bucket name
+     * @param {string} key - The S3 object key
+     * @returns {Promise<File>} The new file instance
+     * @example
+     * const newFile = await file.moveToS3('my-bucket', 'path/to/file.txt');
+     */
     async moveToS3(bucket: string, key: string): Promise<File> {
         // Upload to S3 and get new file instance
         const command = new PutObjectCommand({
@@ -537,6 +711,12 @@ export default class File {
         return File.createFromS3(bucket, key);
     }
 
+    /**
+     * Checks if the file exists on the filesystem.
+     * @returns {Promise<boolean>} Whether the file exists
+     * @example
+     * const exists = await file.exists();
+     */
     async exists(): Promise<boolean> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             try {
@@ -549,6 +729,12 @@ export default class File {
         return true; // For non-file sources, we assume they exist since we have their data
     }
 
+    /**
+     * Checks if the file is readable.
+     * @returns {Promise<boolean>} Whether the file is readable
+     * @example
+     * const isReadable = await file.isReadable();
+     */
     async isReadable(): Promise<boolean> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             try {
@@ -561,6 +747,12 @@ export default class File {
         return true; // For non-file sources, we assume they're readable since we have their data
     }
 
+    /**
+     * Checks if the file is writable.
+     * @returns {Promise<boolean>} Whether the file is writable
+     * @example
+     * const isWritable = await file.isWritable();
+     */
     async isWritable(): Promise<boolean> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             try {
@@ -573,6 +765,12 @@ export default class File {
         return false; // For non-file sources, we can't write back to them
     }
 
+    /**
+     * Calculates the SHA-256 checksum of the file.
+     * @returns {Promise<string>} The file's checksum
+     * @example
+     * const checksum = await file.getChecksum();
+     */
     async getChecksum(): Promise<string> {
         const bytes = await this.readFileBytes();
         const buffer = Buffer.from(bytes);
@@ -581,6 +779,13 @@ export default class File {
         return hash.digest('hex');
     }
 
+    /**
+     * Updates the file's metadata.
+     * @param {Partial<Metadata>} metadata - The metadata to update
+     * @returns {Promise<void>}
+     * @example
+     * await file.setMetadata({ name: 'new-name.txt' });
+     */
     async setMetadata(metadata: Partial<Metadata>): Promise<void> {
         this.metadata = {
             ...this.metadata,
@@ -588,6 +793,12 @@ export default class File {
         };
     }
 
+    /**
+     * Gets the file's filesystem stats.
+     * @returns {Promise<fs.Stats | undefined>} The file's stats or undefined if not a filesystem file
+     * @example
+     * const stats = await file.getStats();
+     */
     async getStats(): Promise<fs.Stats | undefined> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             return await fs.promises.stat(this.metadata.path);
@@ -595,6 +806,13 @@ export default class File {
         return undefined;
     }
 
+    /**
+     * Appends content to the end of the file.
+     * @param {string | Buffer} content - The content to append
+     * @returns {Promise<void>}
+     * @example
+     * await file.append('Additional content');
+     */
     async append(content: string | Buffer): Promise<void> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
@@ -605,6 +823,13 @@ export default class File {
         }
     }
 
+    /**
+     * Prepends content to the beginning of the file.
+     * @param {string | Buffer} content - The content to prepend
+     * @returns {Promise<void>}
+     * @example
+     * await file.prepend('New content at start');
+     */
     async prepend(content: string | Buffer): Promise<void> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             const existingContent = Buffer.from(await this.readFileBytes());
@@ -616,6 +841,13 @@ export default class File {
         }
     }
 
+    /**
+     * Truncates the file to the specified size.
+     * @param {number} size - The new size of the file
+     * @returns {Promise<void>}
+     * @example
+     * await file.truncate(1000);
+     */
     async truncate(size: number): Promise<void> {
         if (this.fileSource === FileSource.File && this.metadata.path) {
             await fs.promises.truncate(this.metadata.path, size);
@@ -625,6 +857,13 @@ export default class File {
         }
     }
 
+    /**
+     * Gets a signed URL for accessing an S3 file.
+     * @param {number} [expiresIn=3600] - The number of seconds until the URL expires
+     * @returns {Promise<string>} The signed URL
+     * @example
+     * const signedUrl = await file.getSignedUrl(7200); // URL expires in 2 hours
+     */
     async getSignedUrl(expiresIn: number = 3600): Promise<string> {
         if (this.fileSource === FileSource.S3 && this.metadata.url) {
             const [bucket, key] = this.metadata.url.replace('s3://', '').split('/', 2);
