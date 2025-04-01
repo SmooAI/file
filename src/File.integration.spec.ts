@@ -16,17 +16,6 @@ const TEST_FILES = {
     pdf: path.join(TEST_DIR, 'icon.pdf'),
 } as const;
 
-type TestFileKey = keyof typeof TEST_FILES;
-
-// Create a reverse map of file basenames to their keys in TEST_FILES
-const TEST_FILES_REVERSE = Object.entries(TEST_FILES).reduce(
-    (acc, [key, filePath]) => {
-        acc[path.basename(filePath)] = key as TestFileKey;
-        return acc;
-    },
-    {} as Record<string, TestFileKey>,
-);
-
 // Helper function to determine MIME type based on file extension
 function getMimeType(fileName: string): string {
     const ext = path.extname(fileName).toLowerCase();

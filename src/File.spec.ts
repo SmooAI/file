@@ -16,7 +16,6 @@ const {
     resetMockSteamFileTypeResult,
     mockWriteStream,
     mockSteamFileTypeResult,
-    mockStreamContent,
     setMockStreamContent,
     resetMockStreamContent,
 } = vi.hoisted(() => {
