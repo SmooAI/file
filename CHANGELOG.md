@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.0.4
+
+### Patch Changes
+
+- f06c94a: Update to publish to npm.
+
 ## 1.0.3
 
 ### Patch Changes
