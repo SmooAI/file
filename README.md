@@ -35,52 +35,202 @@ SmooAI is a platform for building and deploying AI-powered apps.
 
 Learn more on [smoo.ai](https://smoo.ai)
 
-## About @smooai/library-template
+## About @smooai/file
 
-A template repository for creating new SmooAI libraries with standardized tooling, configuration, and best practices.
+A powerful file handling library for Node.js that provides a unified interface for working with files from local filesystem, S3, URLs, and more. Built with streaming in mind, it handles file bytes lazily where possible to minimize memory usage and improve performance.
 
-![GitHub License](https://img.shields.io/github/license/SmooAI/library-template?style=for-the-badge)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/SmooAI/library-template/release.yml?style=for-the-badge)
-![GitHub Repo stars](https://img.shields.io/github/stars/SmooAI/library-template?style=for-the-badge)
+![NPM Version](https://img.shields.io/npm/v/%40smooai%2Ffile?style=for-the-badge)
+![NPM Downloads](https://img.shields.io/npm/dw/%40smooai%2Ffile?style=for-the-badge)
+![NPM Last Update](https://img.shields.io/npm/last-update/%40smooai%2Ffile?style=for-the-badge)
+
+![GitHub License](https://img.shields.io/github/license/SmooAI/file?style=for-the-badge)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/SmooAI/file/release.yml?style=for-the-badge)
+![GitHub Repo stars](https://img.shields.io/github/stars/SmooAI/file?style=for-the-badge)
+
+### Install
+
+```sh
+pnpm add @smooai/file
+```
 
 ### Key Features
 
-- 📦 Preconfigured development environment with TypeScript, ESLint, and Prettier
-- 🧪 Testing setup with Vitest
-- 🔄 Changesets for version management
-- 📚 Integration with SmooAI core utilities
+#### 🚀 Stream-First Design
 
-### Dependencies
+- Lazy loading of file contents
+- Memory-efficient processing
+- Automatic stream handling
+- Support for both Node.js and Web streams
 
-This template comes pre-configured with essential SmooAI packages:
+#### 📦 Multiple File Sources
 
-#### @smooai/logger
+- **Local Filesystem**
 
-A structured logging utility for SmooAI applications that provides:
+    - Read and write operations
+    - File system checks
+    - Metadata extraction
 
-- Standardized log formatting
-- Log level management
-- Integration with SmooAI's logging infrastructure
+- **URLs**
 
-#### @smooai/utils
+    - Automatic download
+    - Stream-based transfer
+    - Header metadata extraction
 
-Common utility functions and helpers used across SmooAI applications.
+- **S3 Objects**
 
-### Development Setup
+    - Direct S3 integration (download and upload)
+    - Stream-based transfer
+    - Header metadata extraction
+    - Signed URL generation
 
-1. Clone the repository
-2. Install dependencies:
+- **FormData**
+    - Ease of use for Multipart FormData upload
 
-```sh
-pnpm install
+#### 🔍 Intelligent File Type Detection
+
+Powered by [file-type](https://github.com/sindresorhus/file-type), providing:
+
+- Magic number detection
+- MIME type inference
+- File extension detection
+- Support for 100+ file types
+
+#### 📝 Rich Metadata
+
+- File name and extension
+- MIME type detection
+- File size
+- Last modified date
+- Creation date
+- File hash/checksum
+- URL and path information
+- Source type
+
+### Examples
+
+- [Basic Usage](#basic-usage)
+- [Streaming Operations](#streaming-operations)
+- [S3 Integration](#s3-integration)
+- [File Type Detection](#file-type-detection)
+- [FormData Support](#formdata-support)
+
+#### Basic Usage <a name="basic-usage"></a>
+
+```typescript
+import File from '@smooai/file';
+
+// Create a file from a local path
+const file = await File.createFromFile('path/to/file.txt');
+
+// Read file contents (streams automatically)
+const content = await file.readFileString();
+console.log(content);
+
+// Get file metadata
+console.log(file.metadata);
+// {
+//   name: 'file.txt',
+//   mimeType: 'text/plain',
+//   size: 1234,
+//   extension: 'txt',
+//   path: 'path/to/file.txt',
+//   lastModified: Date,
+//   createdAt: Date
+// }
 ```
 
-### Available Scripts
+<p align="right">(<a href="#examples">back to examples</a>)</p>
 
-- `pnpm test` - Run tests using Vitest
-- `pnpm build` - Build the library using tsup
-- `pnpm lint` - Run ESLint
-- `pnpm format` - Format code with Prettier
+#### Streaming Operations <a name="streaming-operations"></a>
+
+```typescript
+import File from '@smooai/file';
+
+// Create a file from a URL (streams automatically)
+const file = await File.createFromUrl('https://example.com/large-file.zip');
+
+// Pipe to a destination (streams without loading entire file)
+await file.pipeTo(someWritableStream);
+
+// Read as bytes (streams in chunks)
+const bytes = await file.readFileBytes();
+
+// Save to filesystem (streams directly)
+const { original, newFile } = await file.saveToFile('downloads/file.zip');
+```
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+#### S3 Integration <a name="s3-integration"></a>
+
+```typescript
+import File from '@smooai/file';
+
+// Create from S3 (streams automatically)
+const file = await File.createFromS3('my-bucket', 'path/to/file.jpg');
+
+// Upload to S3 (streams directly)
+await file.uploadToS3('my-bucket', 'remote/file.jpg');
+
+// Save to S3 (creates new file instance)
+const { original, newFile } = await file.saveToS3('my-bucket', 'remote/file.jpg');
+
+// Move to S3 (deletes local file if source was local)
+const s3File = await file.moveToS3('my-bucket', 'remote/file.jpg');
+
+// Generate signed URL
+const signedUrl = await s3File.getSignedUrl(3600); // URL expires in 1 hour
+```
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+#### File Type Detection <a name="file-type-detection"></a>
+
+```typescript
+import File from '@smooai/file';
+
+const file = await File.createFromFile('document.xml');
+
+// Get file type information (detected via magic numbers)
+console.log(file.mimeType); // 'application/xml'
+console.log(file.extension); // 'xml'
+
+// File type is automatically detected from:
+// - Magic numbers (via file-type)
+// - MIME type headers
+// - File extension
+// - Custom detectors
+```
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+#### FormData Support <a name="formdata-support"></a>
+
+```typescript
+import File from '@smooai/file';
+
+const file = await File.createFromFile('document.pdf');
+
+// Convert to FormData for uploads
+const formData = await file.toFormData('document');
+
+// Use with fetch or other HTTP clients
+await fetch('https://api.example.com/upload', {
+    method: 'POST',
+    body: formData,
+});
+```
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+### Built With
+
+- TypeScript
+- Node.js File System API
+- AWS SDK v3
+- [file-type](https://github.com/sindresorhus/file-type) for magic number-based MIME type detection
+- [@smooai/fetch](https://github.com/SmooAI/fetch) for URL downloads
+- [@smooai/logger](https://github.com/SmooAI/logger) for structured logging
 
 ## Contributing
 

@@ -1,4 +1,4 @@
-# @smooai/library-template
+# @smooai/file
 
 ## 1.0.2
 
