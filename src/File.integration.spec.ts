@@ -1,10 +1,10 @@
-import { describe, expect, it, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
-import File from './File';
 import fs from 'fs';
-import path from 'path';
 import os from 'os';
+import path from 'path';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import File from './File';
 
 const TEST_DIR = path.join(__dirname, 'test');
 const TEST_FILES = {

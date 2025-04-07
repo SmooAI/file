@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- ok*/
-import fetch from '@smooai/fetch';
-import File, { FileSource } from '../src/File';
-import { FileTypeResult, ReadableStreamWithFileType } from 'file-type/node';
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
-import { S3Client, GetObjectCommandOutput, GetObjectCommand } from '@aws-sdk/client-s3';
 import path from 'path';
-import { detectXml } from '@file-type/xml';
 import { Readable } from 'stream';
+import { GetObjectCommand, GetObjectCommandOutput, S3Client } from '@aws-sdk/client-s3';
+import { detectXml } from '@file-type/xml';
+import fetch from '@smooai/fetch';
+import { FileTypeResult, ReadableStreamWithFileType } from 'file-type/node';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import File, { FileSource } from '../src/File';
 
 const {
     setMockSteamFileTypeResult,
@@ -389,7 +389,7 @@ describe('#File', () => {
             },
         });
 
-        vi.mocked(fetch).mockResolvedValueOnce(response);
+        vi.mocked(fetch).mockResolvedValueOnce(response as unknown as Response & { data?: unknown; isJson: boolean; dataString: string });
 
         const file = await File.createFromUrl(url, { size: 19463 });
 
@@ -627,7 +627,7 @@ describe('#File', () => {
                 },
             });
 
-            vi.mocked(fetch).mockResolvedValueOnce(response);
+            vi.mocked(fetch).mockResolvedValueOnce(response as unknown as Response & { data?: unknown; isJson: boolean; dataString: string });
             setMockSteamFileTypeResult({ mime: 'text/plain', ext: 'txt' });
 
             const file = await File.createFromUrl('https://example.com/test.txt');
@@ -1025,7 +1025,7 @@ describe('#File', () => {
                 },
             });
 
-            vi.mocked(fetch).mockResolvedValueOnce(response);
+            vi.mocked(fetch).mockResolvedValueOnce(response as unknown as Response & { data?: unknown; isJson: boolean; dataString: string });
             setMockSteamFileTypeResult({ mime: 'image/png', ext: 'png' });
 
             const file = await File.createFromUrl(url);
