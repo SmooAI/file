@@ -1,18 +1,18 @@
-import { GetObjectCommand, GetObjectCommandOutput, S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import contentDisposition from 'content-disposition';
-import { fileTypeFromFile, ReadableStreamWithFileType, FileTypeParser } from 'file-type/node';
-import { detectXml } from '@file-type/xml';
-import { File as FormDataFile, FormData } from 'formdata-node';
+import crypto from 'crypto';
 import fs from 'fs';
-import mime from 'mime-types';
 import path from 'path';
 import { Readable } from 'stream';
-import invariant from 'tiny-invariant';
-import crypto from 'crypto';
-
+import { GetObjectCommand, GetObjectCommandOutput, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { detectXml } from '@file-type/xml';
 import fetch, { Response } from '@smooai/fetch';
 import ServerLogger from '@smooai/logger/AwsLambdaLogger';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import contentDisposition from 'content-disposition';
+import { fileTypeFromFile, FileTypeParser, ReadableStreamWithFileType } from 'file-type/node';
+import { FormData, File as FormDataFile } from 'formdata-node';
+import mime from 'mime-types';
+import invariant from 'tiny-invariant';
+
 const logger = new ServerLogger();
 
 const s3Client = new S3Client({ apiVersion: '2023-11-01' });
@@ -234,8 +234,9 @@ export default class File {
         const response = await fetch(url);
         invariant(response.body, 'Response body is missing');
 
+        // Clone the stream so we can use it multiple times if needed
         const webStream = response.body as unknown as ReadableStream;
-        const nodeStream = File.webStreamToNodeStream(webStream);
+        const nodeStream = File.webStreamToNodeStream(webStream.tee()[0]);
         const typedStream = await toDetectionStream(nodeStream);
 
         const metadata = await File.getFileMetadata({
