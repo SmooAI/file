@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.0.7
+
+### Patch Changes
+
+- a4dae2d: Update readme.
+
 ## 1.0.6
 
 ### Patch Changes
