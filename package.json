@@ -17,17 +17,16 @@
         "url": "https://smooai.com"
     },
     "exports": {
-        "./File": {
-            "types": "./dist/File.d.ts",
-            "import": "./dist/File.mjs",
-            "require": "./dist/File.js",
-            "default": "./dist/File.js"
-        },
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.mjs",
             "require": "./dist/index.js",
             "default": "./dist/index.js"
+        },
+        "./*": {
+            "types": "./dist/*.d.ts",
+            "import": "./dist/*.mjs",
+            "require": "./dist/*.js"
         }
     },
     "main": "./dist/index.js",
@@ -53,9 +52,9 @@
         "@aws-sdk/client-s3": "^3.777.0",
         "@aws-sdk/s3-request-presigner": "^3.777.0",
         "@file-type/xml": "^0.4.1",
-        "@smooai/fetch": "^1.4.1",
-        "@smooai/logger": "^1.0.22",
-        "@smooai/utils": "^1.0.21",
+        "@smooai/fetch": "^1.5.0",
+        "@smooai/logger": "^1.2.0",
+        "@smooai/utils": "^1.2.3",
         "content-disposition": "^0.5.4",
         "file-type": "^20.4.1",
         "formdata-node": "^6.0.3",
