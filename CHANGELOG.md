@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.1.0
+
+### Minor Changes
+
+- a18b3e7: Fix package exports.
+
 ## 1.0.7
 
 ### Patch Changes
