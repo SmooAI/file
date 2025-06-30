@@ -6,7 +6,7 @@ import { GetObjectCommand, GetObjectCommandOutput, PutObjectCommand, S3Client } 
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { detectXml } from '@file-type/xml';
 import fetch, { Response } from '@smooai/fetch';
-import ServerLogger from '@smooai/logger/AwsLambdaLogger';
+import ServerLogger from '@smooai/logger/AwsServerLogger';
 import contentDisposition from 'content-disposition';
 import { fileTypeFromFile, FileTypeParser, ReadableStreamWithFileType } from 'file-type/node';
 import { FormData, File as FormDataFile } from 'formdata-node';
