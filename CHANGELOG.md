@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.1.1
+
+### Patch Changes
+
+- 342c972: Updating smoo dependencies.
+
 ## 1.1.0
 
 ### Minor Changes
