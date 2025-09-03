@@ -20,7 +20,7 @@ const {
     resetMockStreamContent,
 } = vi.hoisted(() => {
     const mockSteamFileTypeResult: Partial<Writable<FileTypeResult> & { useActual: boolean }> = { mime: 'text/plain', ext: 'txt', useActual: false };
-    let mockStreamContent = new Uint8Array(8);
+    let mockStreamContent: Uint8Array<ArrayBuffer> = new Uint8Array(8);
     const setMockSteamFileTypeResult = (
         fileTypeResult: Partial<Writable<FileTypeResult> & { useActual: boolean }> = { mime: 'text/plain', ext: 'txt', useActual: false },
     ) => {
@@ -32,7 +32,7 @@ const {
         setMockSteamFileTypeResult();
     };
 
-    const setMockStreamContent = (content: Uint8Array) => {
+    const setMockStreamContent = (content: Uint8Array<ArrayBuffer>) => {
         mockStreamContent = content;
     };
     const resetMockStreamContent = () => {

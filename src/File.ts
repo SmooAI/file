@@ -105,7 +105,7 @@ export default class File {
     private fileSource!: FileSource;
     private _stream!: ReadableStreamWithFileType;
     private _metadata!: Metadata;
-    private bytes: ArrayBuffer | undefined;
+    private bytes: ArrayBufferLike | undefined;
 
     private get stream(): ReadableStreamWithFileType {
         return this._stream;
@@ -163,7 +163,7 @@ export default class File {
         this._metadata = value;
     }
 
-    private constructor(fileSource: FileSource, stream: ReadableStreamWithFileType, metadata: Metadata, bytes?: ArrayBuffer) {
+    private constructor(fileSource: FileSource, stream: ReadableStreamWithFileType, metadata: Metadata, bytes?: ArrayBufferLike) {
         logger.info({ metadata }, 'File created');
         this.fileSource = fileSource;
         this.stream = stream;
@@ -291,7 +291,7 @@ export default class File {
      * @example
      * const file = await File.createFromBytes(new Uint8Array([1, 2, 3]));
      */
-    static async createFromBytes(bytes: ArrayBuffer, metadataHint?: MetadataHint): Promise<File> {
+    static async createFromBytes(bytes: ArrayBufferLike, metadataHint?: MetadataHint): Promise<File> {
         const nodeStream = new Readable();
         nodeStream.push(Buffer.from(bytes));
         nodeStream.push(null);
@@ -492,7 +492,7 @@ export default class File {
      * @example
      * const bytes = await file.readFileBytes();
      */
-    async readFileBytes(): Promise<ArrayBuffer> {
+    async readFileBytes(): Promise<ArrayBufferLike> {
         if (this.bytes) {
             return this.bytes;
         }
@@ -622,7 +622,7 @@ export default class File {
             destination.on('finish', resolve);
             nodeStream.on('data', (chunk) => {
                 if (saveBytes) {
-                    this.bytes = Buffer.concat([!this.bytes ? Buffer.from([]) : Buffer.from(this.bytes), chunk]);
+                    this.bytes = Buffer.concat([!this.bytes ? Buffer.from([]) : Buffer.from(this.bytes), chunk]).buffer;
                 }
             });
 
