@@ -319,7 +319,8 @@ describe('File Integration Tests', () => {
             expect(fs.existsSync(newPath)).toBe(true);
 
             const newContent = await result.newFile.readFileString();
-            const originalContent = await file.readFileString();
+            const originalFile = await File.createFromFile(TEST_FILES.text);
+            const originalContent = await originalFile.readFileString();
             expect(newContent).toBe(originalContent);
         });
 
