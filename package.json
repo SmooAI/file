@@ -1,6 +1,6 @@
 {
     "name": "@smooai/file",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "description": "A powerful file handling library for Node.js that provides a unified interface for working with files from local filesystem, S3, URLs, and more. Built with streaming in mind, it handles file bytes lazily where possible to minimize memory usage and improve performance.",
     "homepage": "https://github.com/SmooAI/file#readme",
     "bugs": {

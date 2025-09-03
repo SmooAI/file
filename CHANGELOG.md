@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.1.2
+
+### Patch Changes
+
+- ffc04a8: Updating smoo dependencies.
+
 ## 1.1.1
 
 ### Patch Changes
