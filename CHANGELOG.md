@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.1.3
+
+### Patch Changes
+
+- c701114: Update @smooai/logger and other smoo dependencies.
+
 ## 1.1.2
 
 ### Patch Changes
