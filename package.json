@@ -36,6 +36,7 @@
         "dist/**"
     ],
     "scripts": {
+        "aibranch": "pnpm generate-git-branch",
         "build": "pnpm create-entry-points -i \"src/**/*.ts\" && pnpm tsup",
         "check-all": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build",
         "ci:publish": "pnpm build && pnpm changeset publish",
@@ -53,9 +54,9 @@
         "@aws-sdk/client-s3": "^3.777.0",
         "@aws-sdk/s3-request-presigner": "^3.777.0",
         "@file-type/xml": "^0.4.1",
-        "@smooai/fetch": "^2.0.1",
-        "@smooai/logger": "^3.1.1",
-        "@smooai/utils": "^1.3.0",
+        "@smooai/fetch": "^2.1.0",
+        "@smooai/logger": "^3.1.2",
+        "@smooai/utils": "^1.3.1",
         "content-disposition": "^0.5.4",
         "file-type": "^20.4.1",
         "formdata-node": "^6.0.3",
