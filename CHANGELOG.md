@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 1.1.4
+
+### Patch Changes
+
+- f3ca33c: Fix bug with S3Client usage.
+
 ## 1.1.3
 
 ### Patch Changes
