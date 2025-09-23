@@ -15,11 +15,11 @@ import invariant from 'tiny-invariant';
 
 const logger = new ServerLogger();
 
-const s3Client = new S3Client({ apiVersion: '2023-11-01' });
-
 const parser = new FileTypeParser({
     customDetectors: [detectXml],
 });
+
+const buildS3Client = () => new S3Client({ apiVersion: '2023-11-01' });
 
 const toDetectionStream = parser.toDetectionStream.bind(parser);
 
@@ -102,6 +102,8 @@ export enum FileSource {
  * const file = await File.createFromStream(readableStream);
  */
 export default class File {
+    private s3Client: S3Client = buildS3Client();
+
     private fileSource!: FileSource;
     private _stream!: ReadableStreamWithFileType;
     private _metadata!: Metadata;
@@ -265,6 +267,7 @@ export default class File {
             Bucket: bucket,
             Key: key,
         });
+        const s3Client = buildS3Client();
         const response = await s3Client.send(command);
         invariant(response.Body, 'Response body is missing');
 
@@ -653,7 +656,7 @@ export default class File {
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
-        await s3Client.send(command);
+        await this.s3Client.send(command);
     }
 
     /**
@@ -675,7 +678,7 @@ export default class File {
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
-        await s3Client.send(command);
+        await this.s3Client.send(command);
 
         // Create new file instance
         const newFile = await File.createFromS3(bucket, key);
@@ -702,7 +705,7 @@ export default class File {
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
-        await s3Client.send(command);
+        await this.s3Client.send(command);
 
         // If this is a file on disk, delete it
         if (this.fileSource === FileSource.File && this.metadata.path) {
@@ -872,7 +875,7 @@ export default class File {
                 Bucket: bucket,
                 Key: key,
             });
-            return await getSignedUrl(s3Client, command, { expiresIn });
+            return await getSignedUrl(this.s3Client, command, { expiresIn });
         }
         throw new Error('Cannot generate signed URL for non-S3 file');
     }
