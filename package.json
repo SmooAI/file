@@ -6,16 +6,22 @@
     "bugs": {
         "url": "https://github.com/SmooAI/file/issues"
     },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/SmooAI/file.git"
-    },
     "license": "MIT",
     "author": {
         "name": "SmooAI",
         "email": "brent@smooai.com",
         "url": "https://smooai.com"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/SmooAI/file.git"
+    },
+    "files": [
+        "dist/**"
+    ],
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
@@ -29,12 +35,9 @@
             "require": "./dist/*.js"
         }
     },
-    "main": "./dist/index.js",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
-    "files": [
-        "dist/**"
-    ],
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
         "aibranch": "pnpm generate-git-branch",
         "build": "pnpm create-entry-points -i \"src/**/*.ts\" && pnpm tsup",
@@ -42,7 +45,7 @@
         "ci:publish": "pnpm build && pnpm changeset publish",
         "format": "oxfmt --write .",
         "lint": "oxlint .",
-        "lint:fix": "eslint src/ --fix",
+        "lint:fix": "oxlint --fix .",
         "pre-commit-check": "(zsh .husky/pre-commit)",
         "prepare": "husky",
         "test": "vitest run",
@@ -74,17 +77,14 @@
         "husky": "^9.1.7",
         "lint-staged": "^15.4.3",
         "msw": "^2.7.3",
+        "oxfmt": "^0.28.0",
+        "oxlint": "^0.16.0",
         "tsup": "^8.4.0",
         "vite": "^6.2.3",
         "vite-node": "^3.0.9",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^3.0.9",
-        "vitest-tsconfig-paths": "^3.4.1",
-        "oxlint": "^0.16.0",
-        "oxfmt": "^0.28.0"
+        "vitest-tsconfig-paths": "^3.4.1"
     },
-    "packageManager": "pnpm@10.6.1+sha512.40ee09af407fa9fbb5fbfb8e1cb40fbb74c0af0c3e10e9224d7b53c7658528615b2c92450e74cfad91e3a2dcafe3ce4050d80bda71d757756d2ce2b66213e9a3",
-    "publishConfig": {
-        "access": "public"
-    }
+    "packageManager": "pnpm@10.6.1+sha512.40ee09af407fa9fbb5fbfb8e1cb40fbb74c0af0c3e10e9224d7b53c7658528615b2c92450e74cfad91e3a2dcafe3ce4050d80bda71d757756d2ce2b66213e9a3"
 }

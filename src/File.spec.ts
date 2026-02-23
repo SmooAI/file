@@ -4,9 +4,9 @@ import path from 'path';
 import { Readable } from 'stream';
 import { GetObjectCommand, GetObjectCommandOutput, S3Client } from '@aws-sdk/client-s3';
 import { detectXml } from '@file-type/xml';
-import fetch from '@smooai/fetch';
 import { FileTypeResult, ReadableStreamWithFileType } from 'file-type/node';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import fetch from '@smooai/fetch';
 import File, { FileSource } from '../src/File';
 
 const {

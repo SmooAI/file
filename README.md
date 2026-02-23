@@ -69,19 +69,16 @@ pnpm add @smooai/file
 #### 📦 Multiple File Sources
 
 - **Local Filesystem**
-
     - Read and write operations
     - File system checks
     - Metadata extraction
 
 - **URLs**
-
     - Automatic download
     - Stream-based transfer
     - Header metadata extraction
 
 - **S3 Objects**
-
     - Direct S3 integration (download and upload)
     - Stream-based transfer
     - Header metadata extraction
@@ -252,7 +249,6 @@ Contributions are welcome! This project uses [changesets](https://github.com/cha
     ```
 
     This will prompt you to:
-
     - Choose the type of version bump (patch, minor, or major)
     - Provide a description of the changes
 
