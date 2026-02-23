@@ -1,0 +1,20 @@
+[package]
+name = "smooai-file"
+version = "1.1.5"
+edition = "2021"
+description = "A unified file handling library for working with files from local filesystem, S3, URLs, and streams."
+license = "MIT"
+repository = "https://github.com/SmooAI/file"
+homepage = "https://github.com/SmooAI/file"
+keywords = ["file", "s3", "streaming", "smooai"]
+categories = ["filesystem"]
+readme = "README.md"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["test-util", "macros", "rt-multi-thread"] }
