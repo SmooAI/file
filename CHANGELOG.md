@@ -1,5 +1,12 @@
 # @smooai/file
 
+## 1.1.5
+
+### Patch Changes
+
+- 1b2aebd: Fix bug with S3Client usage.
+- e59d9a1: Add SmooAI Packages section to README with link to smoo.ai/open-source for consistency across all SmooAI packages.
+
 ## 1.1.4
 
 ### Patch Changes
