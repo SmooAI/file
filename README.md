@@ -35,6 +35,10 @@ SmooAI is an AI-powered platform for helping businesses multiply their customer,
 
 Learn more on [smoo.ai](https://smoo.ai)
 
+## SmooAI Packages
+
+Check out other SmooAI packages at [smoo.ai/open-source](https://smoo.ai/open-source)
+
 ## About @smooai/file
 
 A powerful file handling library for Node.js that provides a unified interface for working with files from local filesystem, S3, URLs, and more. Built with streaming in mind, it handles file bytes lazily where possible to minimize memory usage and improve performance.
