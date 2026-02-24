@@ -76,7 +76,9 @@ pub fn mime_from_extension(ext: &str) -> Option<String> {
 pub fn extension_from_mime(mime: &str) -> Option<String> {
     // Use mime_guess's reverse lookup
     let extensions = mime_guess::get_mime_extensions_str(mime);
-    extensions.and_then(|exts| exts.first().copied()).map(|e| e.to_string())
+    extensions
+        .and_then(|exts| exts.first().copied())
+        .map(|e| e.to_string())
 }
 
 /// Custom detection for SVG and XML content by inspecting the byte content.
@@ -238,10 +240,7 @@ mod tests {
 
     #[test]
     fn test_mime_from_extension() {
-        assert_eq!(
-            mime_from_extension("png").as_deref(),
-            Some("image/png")
-        );
+        assert_eq!(mime_from_extension("png").as_deref(), Some("image/png"));
         assert_eq!(
             mime_from_extension("pdf").as_deref(),
             Some("application/pdf")

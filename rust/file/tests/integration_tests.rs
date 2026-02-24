@@ -12,11 +12,14 @@ async fn test_bytes_to_disk_roundtrip() {
     let data = Bytes::from(original_content);
 
     // Create from bytes
-    let file = File::from_bytes(data, Some(Metadata {
-        name: Some("roundtrip.txt".to_string()),
-        mime_type: Some("text/plain".to_string()),
-        ..Default::default()
-    }))
+    let file = File::from_bytes(
+        data,
+        Some(Metadata {
+            name: Some("roundtrip.txt".to_string()),
+            mime_type: Some("text/plain".to_string()),
+            ..Default::default()
+        }),
+    )
     .await
     .unwrap();
 
@@ -98,7 +101,10 @@ async fn test_url_to_disk_pipeline() {
             ResponseTemplate::new(200)
                 .set_body_string(content)
                 .insert_header("content-type", "text/plain")
-                .insert_header("content-disposition", "attachment; filename=\"server-file.txt\""),
+                .insert_header(
+                    "content-disposition",
+                    "attachment; filename=\"server-file.txt\"",
+                ),
         )
         .mount(&server)
         .await;
@@ -168,7 +174,9 @@ async fn test_binary_detection_pipeline() {
     png.extend_from_slice(&[0; 100]);
 
     // From bytes
-    let bytes_file = File::from_bytes(Bytes::from(png.clone()), None).await.unwrap();
+    let bytes_file = File::from_bytes(Bytes::from(png.clone()), None)
+        .await
+        .unwrap();
     assert_eq!(bytes_file.mime_type(), Some("image/png"));
     assert_eq!(bytes_file.extension(), Some("png"));
 

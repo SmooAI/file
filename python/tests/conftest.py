@@ -19,6 +19,7 @@ from moto import mock_aws
 # This is a 1x1 pixel transparent PNG.
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
+
 def _make_png_bytes() -> bytes:
     """Build a minimal valid 1x1 PNG."""
     import zlib
@@ -94,6 +95,7 @@ def text_bytes() -> bytes:
 # Temporary file fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def tmp_dir():
     """Provide a temporary directory that is cleaned up after the test."""
@@ -129,6 +131,7 @@ def tmp_pdf_file(tmp_dir: str, pdf_bytes: bytes) -> str:
 # ---------------------------------------------------------------------------
 # Moto S3 fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def aws_credentials(monkeypatch: pytest.MonkeyPatch):

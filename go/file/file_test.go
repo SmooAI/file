@@ -114,7 +114,7 @@ func TestNewFromURL(t *testing.T) {
 			hints:      []MetadataHint{{Name: "custom.bin"}},
 			wantName:   "custom.bin",
 			wantMime:   "text/plain; charset=utf-8", // magic-byte detects text
-			wantSize:   4,                            // Content-Length from response takes precedence
+			wantSize:   4,                           // Content-Length from response takes precedence
 			wantSource: SourceURL,
 		},
 		{

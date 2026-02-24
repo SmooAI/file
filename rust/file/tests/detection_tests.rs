@@ -1,12 +1,13 @@
 //! Integration tests for file type detection.
 
-use smooai_file::detection::{detect_from_bytes, detect_from_filename, extension_from_mime, mime_from_extension};
+use smooai_file::detection::{
+    detect_from_bytes, detect_from_filename, extension_from_mime, mime_from_extension,
+};
 
 #[test]
 fn test_detect_png_magic_bytes() {
     let png_header: Vec<u8> = vec![
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        // IHDR chunk
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // IHDR chunk
         0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
     ];
     let result = detect_from_bytes(&png_header, None);

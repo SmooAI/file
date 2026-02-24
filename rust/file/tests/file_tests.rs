@@ -204,8 +204,12 @@ async fn test_checksum_deterministic() {
 
 #[tokio::test]
 async fn test_checksum_different_content() {
-    let file1 = File::from_bytes(Bytes::from("content a"), None).await.unwrap();
-    let file2 = File::from_bytes(Bytes::from("content b"), None).await.unwrap();
+    let file1 = File::from_bytes(Bytes::from("content a"), None)
+        .await
+        .unwrap();
+    let file2 = File::from_bytes(Bytes::from("content b"), None)
+        .await
+        .unwrap();
 
     let checksum1 = file1.checksum().await.unwrap();
     let checksum2 = file2.checksum().await.unwrap();

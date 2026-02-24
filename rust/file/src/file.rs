@@ -6,8 +6,8 @@
 use std::path::Path;
 
 use aws_config::BehaviorVersion;
-use aws_sdk_s3::Client as S3Client;
 use aws_sdk_s3::presigning::PresigningConfig;
+use aws_sdk_s3::Client as S3Client;
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
@@ -15,7 +15,9 @@ use sha2::{Digest, Sha256};
 use tracing;
 
 use crate::content_disposition::parse_content_disposition;
-use crate::detection::{detect_from_bytes, detect_from_filename, extension_from_mime, mime_from_extension};
+use crate::detection::{
+    detect_from_bytes, detect_from_filename, extension_from_mime, mime_from_extension,
+};
 use crate::error::{FileError, Result};
 use crate::metadata::{Metadata, MetadataHint};
 use crate::source::FileSource;
@@ -118,7 +120,10 @@ impl File {
         // Set path and name from filesystem
         metadata.path = Some(path_str);
         if metadata.name.is_none() {
-            metadata.name = path.file_name().and_then(|n| n.to_str()).map(|s| s.to_string());
+            metadata.name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .map(|s| s.to_string());
         }
 
         // Filesystem metadata
@@ -716,9 +721,7 @@ impl File {
             req = req.content_disposition(format!("attachment; filename=\"{}\"", name));
         }
 
-        req.send()
-            .await
-            .map_err(|e| FileError::S3(e.to_string()))?;
+        req.send().await.map_err(|e| FileError::S3(e.to_string()))?;
 
         Ok(())
     }
@@ -774,8 +777,9 @@ impl File {
             ));
         }
 
-        let presigning = PresigningConfig::expires_in(std::time::Duration::from_secs(expires_in_secs))
-            .map_err(|e| FileError::S3(format!("Presigning config error: {}", e)))?;
+        let presigning =
+            PresigningConfig::expires_in(std::time::Duration::from_secs(expires_in_secs))
+                .map_err(|e| FileError::S3(format!("Presigning config error: {}", e)))?;
 
         let presigned = client
             .get_object()
@@ -904,10 +908,7 @@ mod tests {
             get_filename_from_url("https://example.com/path/to/file.txt"),
             Some("file.txt".to_string())
         );
-        assert_eq!(
-            get_filename_from_url("https://example.com/"),
-            None
-        );
+        assert_eq!(get_filename_from_url("https://example.com/"), None);
         assert_eq!(
             get_filename_from_url("https://example.com/image.png?v=1"),
             Some("image.png".to_string())
@@ -981,7 +982,7 @@ mod tests {
         let file = File::from_bytes(data, None).await.unwrap();
         let checksum = file.checksum().await.unwrap();
         assert_eq!(checksum.len(), 64); // SHA-256 hex is 64 chars
-        // Known SHA-256 of 8 zero bytes
+                                        // Known SHA-256 of 8 zero bytes
         assert_eq!(
             checksum,
             "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc"
@@ -1016,10 +1017,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_from_stream() {
-        let chunks = vec![
-            Ok(Bytes::from("hello ")),
-            Ok(Bytes::from("world")),
-        ];
+        let chunks = vec![Ok(Bytes::from("hello ")), Ok(Bytes::from("world"))];
         let stream = futures::stream::iter(chunks);
         let file = File::from_stream(stream, None).await.unwrap();
         assert_eq!(file.source(), FileSource::Stream);

@@ -16,6 +16,7 @@ from smooai_file import File, FileSource
 # from_bytes
 # ---------------------------------------------------------------------------
 
+
 class TestFromBytes:
     async def test_basic_creation(self, text_bytes: bytes) -> None:
         f = await File.from_bytes(text_bytes, metadata_hint={"name": "hello.txt"})
@@ -52,6 +53,7 @@ class TestFromBytes:
 
     async def test_checksum_sha256(self) -> None:
         import hashlib
+
         data = b"\x00" * 8
         f = await File.from_bytes(data)
         expected = hashlib.sha256(data).hexdigest()
@@ -72,6 +74,7 @@ class TestFromBytes:
 # ---------------------------------------------------------------------------
 # from_file
 # ---------------------------------------------------------------------------
+
 
 class TestFromFile:
     async def test_basic_creation(self, tmp_text_file: str) -> None:
@@ -137,6 +140,7 @@ class TestFromFile:
 # ---------------------------------------------------------------------------
 # from_url (using respx)
 # ---------------------------------------------------------------------------
+
 
 class TestFromUrl:
     @respx.mock
@@ -227,9 +231,7 @@ class TestFromUrl:
     @respx.mock
     async def test_metadata_hint_override(self, text_bytes: bytes) -> None:
         url = "https://example.com/file.bin"
-        respx.get(url).mock(
-            return_value=httpx.Response(200, content=text_bytes)
-        )
+        respx.get(url).mock(return_value=httpx.Response(200, content=text_bytes))
 
         f = await File.from_url(url, metadata_hint={"size": 42})
         # httpx automatically sets content-length from content, so the HTTP header
@@ -239,9 +241,7 @@ class TestFromUrl:
     @respx.mock
     async def test_filename_from_url_path(self, text_bytes: bytes) -> None:
         url = "https://example.com/docs/report.pdf"
-        respx.get(url).mock(
-            return_value=httpx.Response(200, content=text_bytes)
-        )
+        respx.get(url).mock(return_value=httpx.Response(200, content=text_bytes))
 
         f = await File.from_url(url)
         # No content-disposition, should fallback to URL path
@@ -251,6 +251,7 @@ class TestFromUrl:
 # ---------------------------------------------------------------------------
 # from_stream
 # ---------------------------------------------------------------------------
+
 
 class TestFromStream:
     async def test_async_iterator(self, text_bytes: bytes) -> None:
@@ -282,6 +283,7 @@ class TestFromStream:
 # Metadata operations
 # ---------------------------------------------------------------------------
 
+
 class TestMetadata:
     async def test_set_metadata(self) -> None:
         f = await File.from_bytes(b"test", metadata_hint={"name": "orig.txt"})
@@ -305,6 +307,7 @@ class TestMetadata:
 # ---------------------------------------------------------------------------
 # Save / Move / Delete
 # ---------------------------------------------------------------------------
+
 
 class TestSaveMoveDelete:
     async def test_save(self, tmp_text_file: str, tmp_dir: str, text_bytes: bytes) -> None:
@@ -349,6 +352,7 @@ class TestSaveMoveDelete:
 # ---------------------------------------------------------------------------
 # Append / Prepend / Truncate
 # ---------------------------------------------------------------------------
+
 
 class TestAppendPrependTruncate:
     async def test_append_string(self, tmp_text_file: str) -> None:
@@ -397,6 +401,7 @@ class TestAppendPrependTruncate:
 # ---------------------------------------------------------------------------
 # Filesystem queries
 # ---------------------------------------------------------------------------
+
 
 class TestFilesystemQueries:
     async def test_exists_true(self, tmp_text_file: str) -> None:

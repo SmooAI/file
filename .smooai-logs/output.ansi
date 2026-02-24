@@ -6156,3 +6156,2634 @@
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.442Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.442Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "png",
+      "mimeType": "image/png",
+      "name": "example.png",
+      "size": 19463,
+      "url": "https://example.com/example.png"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.444Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.444Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromBytes (/Users/brentrager/dev/smooai/file/src/File.ts:207:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 8
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.445Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.445Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-save-to-disk.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-save-to-disk.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.446Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.446Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromBytes (/Users/brentrager/dev/smooai/file/src/File.ts:207:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 8
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.446Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.446Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-copy.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-copy.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.446Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.446Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromBytes (/Users/brentrager/dev/smooai/file/src/File.ts:207:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 8
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.447Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.447Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-moved.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-moved.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.447Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.447Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.448Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.448Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-copy.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-copy.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.448Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.448Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.449Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.449Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-moved.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-moved.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.449Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.449Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.450Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.450Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.450Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.450Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.450Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.450Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.451Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.451Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.451Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.451Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.451Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.451Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.452Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.452Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.453Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.453Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.454Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.454Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.454Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.454Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromBytes (/Users/brentrager/dev/smooai/file/src/File.ts:207:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 8
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.454Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.454Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.454Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.454Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-refreshed.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-refreshed.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.455Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.455Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromS3 (/Users/brentrager/dev/smooai/file/src/File.ts:183:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "test-key.txt",
+      "size": 1024,
+      "url": "s3://test-bucket/test-key.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.455Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.455Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromS3 (/Users/brentrager/dev/smooai/file/src/File.ts:183:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "test-key-refreshed.txt",
+      "size": 1024,
+      "url": "s3://test-bucket/test-key-refreshed.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.456Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.456Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "hash": "abc123",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "test.txt",
+      "size": 8,
+      "url": "https://example.com/test.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.456Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.456Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-refreshed.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-refreshed.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.456Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.456Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromBytes (/Users/brentrager/dev/smooai/file/src/File.ts:207:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "size": 8
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.456Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.456Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example-refreshed.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example-refreshed.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.457Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.457Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.457Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.457Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "destination.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/destination.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.457Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.457Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.457Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.457Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromS3 (/Users/brentrager/dev/smooai/file/src/File.ts:183:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "test-key.txt",
+      "size": 1024,
+      "url": "s3://test-bucket/test-key.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.458Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.458Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.458Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.458Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "destination.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/destination.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.458Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.458Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.459Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.459Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromS3 (/Users/brentrager/dev/smooai/file/src/File.ts:183:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "test-key.txt",
+      "size": 1024,
+      "url": "s3://test-bucket/test-key.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.459Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.459Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromBytes (/Users/brentrager/dev/smooai/file/src/File.ts:207:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 8
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.460Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.460Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.460Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.460Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromS3 (/Users/brentrager/dev/smooai/file/src/File.ts:183:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 1024,
+      "url": "s3://test-bucket/example.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.461Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.461Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromS3 (/Users/brentrager/dev/smooai/file/src/File.ts:183:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 1024,
+      "url": "s3://test-bucket/example.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.462Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.462Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromS3 (/Users/brentrager/dev/smooai/file/src/File.ts:183:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "test-key.txt",
+      "size": 1024,
+      "url": "s3://test-bucket/test-key.txt"
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.464Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.464Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.464Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.464Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "destination.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/destination.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.464Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.464Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.465Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.465Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2023-12-31T00:00:00.000Z",
+      "extension": "txt",
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "mimeType": "text/plain",
+      "name": "destination.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/destination.txt",
+      "size": 100
+    }
+  },
+  "correlationId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "level": 30,
+  "name": "AwsServerLogger",
+  "requestId": "c0e33e04-f775-49fd-b873-1e20bb0bce35",
+  "traceId": "c0e33e04-f775-49fd-b873-1e20bb0bce35"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.489Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.489Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-23T15:28:29.239Z",
+      "extension": "txt",
+      "lastModified": "2026-02-23T15:28:29.240Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.504Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.504Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2025-04-01T04:25:33.688Z",
+      "extension": "txt",
+      "lastModified": "2025-04-01T04:25:33.688Z",
+      "mimeType": "text/plain",
+      "name": "empty.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/empty.txt",
+      "size": 0
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.506Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.506Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2025-04-01T04:25:33.690Z",
+      "extension": "png",
+      "lastModified": "2025-04-01T04:25:33.691Z",
+      "mimeType": "image/png",
+      "name": "icon.png",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/icon.png",
+      "size": 8850
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.513Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.513Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2025-04-01T04:25:33.691Z",
+      "extension": "svg",
+      "lastModified": "2025-04-01T04:25:33.691Z",
+      "mimeType": "image/svg+xml",
+      "name": "icon.svg",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/icon.svg",
+      "size": 1819
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.517Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.517Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2025-04-01T04:25:33.690Z",
+      "extension": "pdf",
+      "lastModified": "2025-04-01T04:25:33.690Z",
+      "mimeType": "application/pdf",
+      "name": "icon.pdf",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/icon.pdf",
+      "size": 16673
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.529Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.529Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2025-04-01T04:25:33.689Z",
+      "extension": "docx",
+      "lastModified": "2025-04-01T04:25:33.689Z",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "name": "example.docx",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.docx",
+      "size": 11954
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.547Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.547Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "size": 12,
+      "url": "https://api.example.com/files/text"
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.552Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.552Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "txt",
+      "mimeType": "text/plain",
+      "name": "empty.txt",
+      "size": 0,
+      "url": "https://api.example.com/files/empty"
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.556Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.556Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "png",
+      "mimeType": "image/png",
+      "name": "icon.png",
+      "size": 8850,
+      "url": "https://api.example.com/files/png"
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.559Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.559Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "svg",
+      "mimeType": "image/svg+xml",
+      "name": "icon.svg",
+      "size": 1819,
+      "url": "https://api.example.com/files/svg"
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.561Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.561Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "pdf",
+      "mimeType": "application/pdf",
+      "name": "icon.pdf",
+      "size": 16673,
+      "url": "https://api.example.com/files/pdf"
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.563Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.563Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromUrl (/Users/brentrager/dev/smooai/file/src/File.ts:153:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "extension": "docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "name": "example.docx",
+      "size": 11954,
+      "url": "https://api.example.com/files/docx"
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.569Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.569Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-23T15:28:29.239Z",
+      "extension": "txt",
+      "lastModified": "2026-02-23T15:28:29.240Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.575Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.575Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.570Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.572Z",
+      "mimeType": "text/plain",
+      "name": "new-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-0Tem8e/new-example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.576Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.576Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-23T15:28:29.239Z",
+      "extension": "txt",
+      "lastModified": "2026-02-23T15:28:29.240Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.577Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.577Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-23T15:28:29.239Z",
+      "extension": "txt",
+      "lastModified": "2026-02-23T15:28:29.240Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.578Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.578Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.578Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.578Z",
+      "mimeType": "text/plain",
+      "name": "moved-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-hkxQtH/moved-example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.580Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.580Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.580Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.580Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.582Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.582Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.580Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.580Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.583Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.583Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.583Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.583Z",
+      "mimeType": "text/plain",
+      "name": "appended-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-zBecut/appended-example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.585Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.585Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.583Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.584Z",
+      "mimeType": "text/plain",
+      "name": "appended-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-zBecut/appended-example.txt",
+      "size": 29
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.587Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.587Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.580Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.580Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.589Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.589Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.588Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.589Z",
+      "mimeType": "text/plain",
+      "name": "prepended-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-GfhsHX/prepended-example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.590Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.590Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.588Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.590Z",
+      "mimeType": "text/plain",
+      "name": "prepended-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-GfhsHX/prepended-example.txt",
+      "size": 30
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.591Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.591Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.580Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.580Z",
+      "mimeType": "text/plain",
+      "name": "example.txt",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.592Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.592Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.592Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.592Z",
+      "mimeType": "text/plain",
+      "name": "truncated-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-7ghk8s/truncated-example.txt",
+      "size": 12
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.594Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.594Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2026-02-24T05:33:15.592Z",
+      "extension": "txt",
+      "lastModified": "2026-02-24T05:33:15.593Z",
+      "mimeType": "text/plain",
+      "name": "truncated-example.txt",
+      "path": "/var/folders/vn/rbfj_chj6wv_1_5n3vhzz0kw0000gn/T/temp-7ghk8s/truncated-example.txt",
+      "size": 5
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+{
+  "msg": "[1m[32mFile created[39m[22m",
+  "time": "[34m2026-02-24T05:33:15.596Z[39m",
+  "@message": "File created",
+  "@timestamp": "2026-02-24T05:33:15.596Z",
+  "LogLevel": "info",
+  "callerContext": {
+    "loggerName": "AwsServerLogger",
+    "stack": [
+      "new File (/Users/brentrager/dev/smooai/file/src/File.ts:79:12)",
+      "Function.createFromFile (/Users/brentrager/dev/smooai/file/src/File.ts:229:12)"
+    ]
+  },
+  "context": {
+    "metadata": {
+      "createdAt": "2025-04-01T04:25:33.690Z",
+      "extension": "png",
+      "lastModified": "2025-04-01T04:25:33.691Z",
+      "mimeType": "image/png",
+      "name": "icon.png",
+      "path": "/Users/brentrager/dev/smooai/file/src/test/icon.png",
+      "size": 8850
+    }
+  },
+  "correlationId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "http": {
+    "request": {
+    }
+  },
+  "lambda": {
+  },
+  "level": 30,
+  "name": "AwsServerLogger",
+  "nodeEnv": "test",
+  "requestId": "143d4a1f-95fe-4d79-8d77-f56b3a973177",
+  "traceId": "143d4a1f-95fe-4d79-8d77-f56b3a973177"
+}
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------

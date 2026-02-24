@@ -1,5 +1,5 @@
 ---
-"@smooai/file": minor
+'@smooai/file': major
 ---
 
 Implement file library in Python, Rust, and Go
