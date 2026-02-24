@@ -57,6 +57,19 @@ A powerful file handling library for Node.js that provides a unified interface f
 pnpm add @smooai/file
 ```
 
+### Multi-Language Support
+
+@smooai/file is available as native implementations in **TypeScript**, **Python**, **Rust**, and **Go** — each built with idiomatic patterns for its ecosystem.
+
+| Language | Package | Install |
+|----------|---------|---------|
+| TypeScript | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) | `pnpm add @smooai/file` |
+| Python | [`smooai-file`](https://pypi.org/project/smooai-file/) | `pip install smooai-file` |
+| Rust | [`smooai-file`](https://crates.io/crates/smooai-file) | `cargo add smooai-file` |
+| Go | `github.com/SmooAI/file/go/file` | `go get github.com/SmooAI/file/go/file` |
+
+Language-specific source code lives in the [`python/`](./python/), [`rust/`](./rust/), and [`go/`](./go/) directories.
+
 ### Key Features
 
 #### 🚀 Stream-First Design
