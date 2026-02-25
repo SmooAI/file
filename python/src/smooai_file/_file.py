@@ -6,8 +6,9 @@ import hashlib
 import json
 import logging
 import os
-from datetime import datetime, timezone
-from typing import IO, AsyncIterator, Union
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
+from typing import IO
 
 import aiofiles
 import aiofiles.os
@@ -22,7 +23,7 @@ from ._source import FileSource
 logger = logging.getLogger("smooai_file")
 
 # Type alias for content that can be appended / prepended.
-ContentLike = Union[str, bytes]
+ContentLike = str | bytes
 
 
 def _build_s3_client():  # noqa: ANN202
@@ -465,8 +466,8 @@ class File:
             try:
                 stat = os.stat(file_path)
                 size = stat.st_size
-                last_modified = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
-                created_at = datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc)
+                last_modified = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
+                created_at = datetime.fromtimestamp(stat.st_ctime, tz=UTC)
             except OSError:
                 pass
 
@@ -834,7 +835,10 @@ class File:
         )
 
     def __repr__(self) -> str:
-        return f"File(source={self._source.value!r}, name={self._metadata.name!r}, mime_type={self._metadata.mime_type!r}, size={self._metadata.size!r})"
+        return (
+            f"File(source={self._source.value!r}, name={self._metadata.name!r}, "
+            f"mime_type={self._metadata.mime_type!r}, size={self._metadata.size!r})"
+        )
 
 
 # ------------------------------------------------------------------

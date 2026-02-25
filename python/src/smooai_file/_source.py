@@ -1,9 +1,9 @@
 """FileSource enum for identifying the origin of a File."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class FileSource(str, Enum):
+class FileSource(StrEnum):
     """Enumeration of possible file sources.
 
     Examples:
