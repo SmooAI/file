@@ -245,7 +245,7 @@ impl File {
         }
 
         // Read the body
-        let data = Bytes::from(response.bytes().await?);
+        let data = response.bytes().await?;
 
         // Override size from actual data if not set from headers
         if metadata.size.is_none() {
