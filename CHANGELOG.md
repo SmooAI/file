@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 2.0.1
+
+### Patch Changes
+
+- 9315676: Add Python, Rust, and Go language-specific READMEs with idiomatic usage examples, cross-language install table, and API reference.
+
 ## 2.0.0
 
 ### Major Changes
