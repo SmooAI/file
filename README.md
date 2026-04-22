@@ -127,6 +127,10 @@ Powered by [file-type](https://github.com/sindresorhus/file-type), providing:
 - [S3 Integration](#s3-integration)
 - [File Type Detection](#file-type-detection)
 - [FormData Support](#formdata-support)
+- [Web File / Blob (Hono, Next.js, Browser)](#web-file)
+- [Validation (size, mime, content-vs-claim)](#validation)
+- [Base64 Encoding](#base64)
+- [Presigned Upload URL](#presigned-upload)
 
 #### Basic Usage <a name="basic-usage"></a>
 
@@ -232,6 +236,88 @@ const formData = await file.toFormData('document');
 await fetch('https://api.example.com/upload', {
     method: 'POST',
     body: formData,
+});
+```
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+#### Web File / Blob (Hono, Next.js, Browser) <a name="web-file"></a>
+
+```typescript
+import File from '@smooai/file';
+
+// Hono multipart route
+app.post('/upload', async (c) => {
+    const form = await c.req.formData();
+    const webFile = form.get('file') as globalThis.File;
+
+    // Preserves the web File's name and type hints.
+    const file = await File.createFromWebFile(webFile);
+    // …validate, upload, etc.
+});
+```
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+#### Validation (size, mime, content-vs-claim) <a name="validation"></a>
+
+```typescript
+import File, { FileValidationError } from '@smooai/file';
+
+const file = await File.createFromWebFile(webFile);
+
+try {
+    await file.validate({
+        maxSize: 5 * 1024 * 1024, // 5MB
+        allowedMimes: ['image/png', 'image/jpeg', 'image/webp'],
+        expectedMimeType: webFile.type, // compares magic-byte detection vs claimed Content-Type
+    });
+} catch (err) {
+    if (err instanceof FileValidationError) {
+        // FileSizeError | FileMimeError | FileContentMismatchError — map to HTTP 400
+        throw new HTTPException(400, { message: err.message });
+    }
+    throw err;
+}
+```
+
+`expectedMimeType` is the primary defense against mime-spoofing: a `.php` file uploaded with `Content-Type: image/png` will fail because magic-byte detection doesn't match the claim.
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+#### Base64 Encoding (email attachments, data URLs) <a name="base64"></a>
+
+```typescript
+import File from '@smooai/file';
+
+const file = await File.createFromUrl('https://s3.example.com/invoice.pdf');
+
+await sendEmail({
+    attachments: [
+        {
+            filename: 'invoice.pdf',
+            content: await file.toBase64(),
+            encoding: 'base64',
+        },
+    ],
+});
+```
+
+<p align="right">(<a href="#examples">back to examples</a>)</p>
+
+#### Presigned Upload URL (server signs, client uploads direct to S3) <a name="presigned-upload"></a>
+
+```typescript
+import File from '@smooai/file';
+
+// Server issues a time-limited signed URL the client uploads bytes to directly.
+// `maxSize` is baked into the signature so oversized uploads are rejected by S3.
+const url = await File.createPresignedUploadUrl({
+    bucket: Resource.Bucket.name,
+    key: `avatars/${userId}.png`,
+    contentType: 'image/png',
+    expiresIn: 600,
+    maxSize: 2 * 1024 * 1024,
 });
 ```
 

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -39,6 +40,7 @@ type S3API interface {
 // S3PresignAPI defines the subset of S3 presign client methods used by this package.
 type S3PresignAPI interface {
 	PresignGetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error)
+	PresignPutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error)
 }
 
 // HTTPClient is an interface for performing HTTP requests. It can be replaced
@@ -368,6 +370,179 @@ func (f *File) Checksum() (string, error) {
 	}
 	h := sha256.Sum256(data)
 	return hex.EncodeToString(h[:]), nil
+}
+
+// --- Base64 ---
+
+// ToBase64 reads the file contents and returns them as a base64-encoded string.
+// Useful for email attachments, data URLs, and APIs that require inline-encoded
+// file bytes.
+func (f *File) ToBase64() (string, error) {
+	data, err := f.Read()
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(data), nil
+}
+
+// --- Validation ---
+
+// ValidateOptions configures the rules applied by File.Validate. Any subset of
+// fields may be set; zero-valued fields are skipped.
+type ValidateOptions struct {
+	// MaxSize is the maximum allowed size in bytes. A value <= 0 disables the
+	// size check. On failure, Validate returns a *FileValidationError with
+	// Kind == KindSize.
+	MaxSize int64
+
+	// AllowedMimes is an allowlist of acceptable mime types. An empty or nil
+	// slice disables the check. On failure, Validate returns a
+	// *FileValidationError with Kind == KindMime.
+	AllowedMimes []string
+
+	// ExpectedMimeType, when non-empty, is compared against the magic-byte-
+	// detected mime type of the file content. This is the primary defense
+	// against mime-spoofing (e.g. a `.php` file uploaded as `image/png`). Pass
+	// the client-claimed Content-Type header here when validating an upload.
+	// On failure, Validate returns a *FileValidationError with Kind ==
+	// KindContentMismatch.
+	ExpectedMimeType string
+}
+
+// Validate checks the file against size, allowed-mime, and content-vs-claim
+// rules. Returns a *FileValidationError (which also matches
+// errors.Is(err, ErrFileValidation)) on failure, so callers can cleanly map
+// validation failures to an HTTP 400 without parsing messages.
+//
+//	if err := f.Validate(file.ValidateOptions{
+//	    MaxSize:          5 * 1024 * 1024,
+//	    AllowedMimes:     []string{"image/png", "image/jpeg"},
+//	    ExpectedMimeType: claimedContentType,
+//	}); err != nil {
+//	    var vErr *file.FileValidationError
+//	    if errors.As(err, &vErr) {
+//	        // return 400 with vErr.Error()
+//	    }
+//	    return err
+//	}
+func (f *File) Validate(opts ValidateOptions) error {
+	if opts.MaxSize > 0 {
+		size := f.meta.Size
+		if size <= 0 {
+			return &FileValidationError{
+				Kind:       KindSize,
+				ActualSize: -1,
+				MaxSize:    opts.MaxSize,
+			}
+		}
+		if size > opts.MaxSize {
+			return &FileValidationError{
+				Kind:       KindSize,
+				ActualSize: size,
+				MaxSize:    opts.MaxSize,
+			}
+		}
+	}
+
+	if len(opts.AllowedMimes) > 0 {
+		actual := f.meta.MimeType
+		if actual == "" || !containsString(opts.AllowedMimes, actual) {
+			// Defensive copy so callers can't mutate the slice via the error.
+			allowed := make([]string, len(opts.AllowedMimes))
+			copy(allowed, opts.AllowedMimes)
+			return &FileValidationError{
+				Kind:           KindMime,
+				ActualMimeType: actual,
+				AllowedMimes:   allowed,
+			}
+		}
+	}
+
+	if opts.ExpectedMimeType != "" {
+		// Magic-byte detection is the source of truth — the stored
+		// meta.MimeType may have been overridden by a hint or HTTP header.
+		detected := DetectMimeTypeFromBytes(f.data)
+		if detected == "" {
+			// Fall back to metadata when magic-byte detection is inconclusive.
+			detected = f.meta.MimeType
+		}
+		if detected != opts.ExpectedMimeType {
+			return &FileValidationError{
+				Kind:             KindContentMismatch,
+				ClaimedMimeType:  opts.ExpectedMimeType,
+				DetectedMimeType: detected,
+			}
+		}
+	}
+
+	return nil
+}
+
+// containsString reports whether s is present in list.
+func containsString(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
+// --- Presigned Upload ---
+
+// PresignedUploadOptions configures CreatePresignedUploadURL.
+type PresignedUploadOptions struct {
+	// ContentType, if non-empty, is baked into the signature so the client
+	// must send this Content-Type header when uploading.
+	ContentType string
+
+	// ExpiresIn is how long the URL remains valid. Defaults to 1 hour if zero.
+	ExpiresIn time.Duration
+
+	// MaxSize, if > 0, is baked into the signature as ContentLength so the
+	// client cannot PUT a larger object. Not all HTTP clients actually send
+	// Content-Length, so servers should still validate on a subsequent HEAD.
+	MaxSize int64
+}
+
+// CreatePresignedUploadURL generates a presigned S3 PUT URL so a client can
+// upload directly to S3 without routing bytes through the server. This
+// centralizes the "server signs, client uploads" pattern so call sites don't
+// each manage their own S3 client and PutObjectCommand.
+func CreatePresignedUploadURL(ctx context.Context, bucket, key string, opts *PresignedUploadOptions) (string, error) {
+	if bucket == "" {
+		return "", newError(ErrInvalidSource, "CreatePresignedUploadURL", fmt.Errorf("bucket is required"))
+	}
+	if key == "" {
+		return "", newError(ErrInvalidSource, "CreatePresignedUploadURL", fmt.Errorf("key is required"))
+	}
+
+	var o PresignedUploadOptions
+	if opts != nil {
+		o = *opts
+	}
+	if o.ExpiresIn <= 0 {
+		o.ExpiresIn = 1 * time.Hour
+	}
+
+	_, presignClient := S3ClientFactory()
+
+	input := &s3.PutObjectInput{
+		Bucket:      aws.String(bucket),
+		Key:         aws.String(key),
+		ContentType: nilIfEmpty(o.ContentType),
+	}
+	if o.MaxSize > 0 {
+		input.ContentLength = aws.Int64(o.MaxSize)
+	}
+
+	req, err := presignClient.PresignPutObject(ctx, input, func(po *s3.PresignOptions) {
+		po.Expires = o.ExpiresIn
+	})
+	if err != nil {
+		return "", newError(ErrS3, "CreatePresignedUploadURL", err)
+	}
+	return req.URL, nil
 }
 
 // --- S3 Operations ---

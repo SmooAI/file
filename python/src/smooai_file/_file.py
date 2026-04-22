@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import logging
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from datetime import UTC, datetime
 from typing import IO
 
@@ -17,6 +18,7 @@ import httpx
 
 from ._content_disposition import parse_content_disposition
 from ._detection import detect_from_bytes, detect_from_extension, extension_from_mime
+from ._errors import FileContentMismatchError, FileMimeError, FileSizeError
 from ._metadata import Metadata, MetadataHint
 from ._source import FileSource
 
@@ -334,6 +336,59 @@ class File:
         return cls(FileSource.S3, metadata, data=data)
 
     # ------------------------------------------------------------------
+    # Factory: create_presigned_upload_url
+    # ------------------------------------------------------------------
+    @classmethod
+    async def create_presigned_upload_url(
+        cls,
+        bucket: str,
+        key: str,
+        content_type: str | None = None,
+        expires_in: int = 3600,
+        max_size: int | None = None,
+    ) -> str:
+        """Generate a pre-signed S3 PUT URL so a client can upload directly to S3.
+
+        Centralizes the "server signs, client uploads" pattern so call sites don't
+        each manage their own S3 client and ``put_object`` parameters. Optional
+        ``max_size`` is baked into the signature so the client cannot upload an
+        object larger than allowed.
+
+        Args:
+            bucket: The S3 bucket name.
+            key: The S3 object key the client will PUT to.
+            content_type: Expected ``Content-Type`` header the client must send (signed).
+            expires_in: URL validity in seconds (default 3600).
+            max_size: Optional max content length in bytes. If provided, the
+                signed URL will include a ``ContentLength`` constraint. Not all
+                HTTP clients send this, so servers should still validate on a
+                subsequent HEAD.
+
+        Returns:
+            The pre-signed URL string.
+
+        Examples:
+            >>> url = await File.create_presigned_upload_url(
+            ...     bucket="my-bucket",
+            ...     key=f"avatars/{user_id}.png",
+            ...     content_type="image/png",
+            ...     expires_in=600,
+            ...     max_size=2 * 1024 * 1024,
+            ... )
+        """
+        s3 = _build_s3_client()
+        params: dict[str, object] = {"Bucket": bucket, "Key": key}
+        if content_type is not None:
+            params["ContentType"] = content_type
+        if max_size is not None:
+            params["ContentLength"] = max_size
+        return s3.generate_presigned_url(
+            "put_object",
+            Params=params,
+            ExpiresIn=expires_in,
+        )
+
+    # ------------------------------------------------------------------
     # Metadata pipeline
     # ------------------------------------------------------------------
     @classmethod
@@ -556,6 +611,89 @@ class File:
         """
         data = await self.read()
         return data.decode(encoding)
+
+    async def to_base64(self) -> str:
+        """Read the file contents and return a base64-encoded string.
+
+        Useful for email attachments, data URLs, and APIs that require
+        inline-encoded file bytes.
+
+        Returns:
+            The file content encoded as base64 (ASCII string).
+
+        Examples:
+            >>> b64 = await file.to_base64()
+            >>> send_email(attachments=[{"filename": file.name, "content": b64, "encoding": "base64"}])
+        """
+        data = await self.read()
+        return base64.b64encode(data).decode("ascii")
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+    async def validate(
+        self,
+        max_size: int | None = None,
+        allowed_mimes: Sequence[str] | None = None,
+        expected_mime_type: str | None = None,
+    ) -> None:
+        """Validate the file against size, allowed-mime, and content-vs-claim rules.
+
+        Raises a typed :class:`FileValidationError` subclass on failure so callers
+        (e.g. HTTP routes) can cleanly map to a 400 response without parsing
+        messages.
+
+        Args:
+            max_size: Maximum allowed size in bytes. Raises :class:`FileSizeError`
+                on failure.
+            allowed_mimes: Allowlist of acceptable mime types. Raises
+                :class:`FileMimeError` if the file's mime type is not in the list.
+                Uses the file's detected or hinted mime type.
+            expected_mime_type: If provided, compares the magic-byte-detected mime
+                type against this expected value. Raises
+                :class:`FileContentMismatchError` if they disagree -- the primary
+                defense against mime-spoofing (e.g. a ``.php`` file uploaded as
+                ``image/png``). Pass the client-claimed ``Content-Type`` header
+                here for upload validation.
+
+        Raises:
+            FileSizeError: If ``max_size`` is exceeded (or the size is unknown).
+            FileMimeError: If the file's mime type is not in ``allowed_mimes``.
+            FileContentMismatchError: If magic-byte detection disagrees with
+                ``expected_mime_type``.
+
+        Examples:
+            In a multipart upload route::
+
+                try:
+                    await file.validate(
+                        max_size=5 * 1024 * 1024,
+                        allowed_mimes=["image/png", "image/jpeg", "image/webp"],
+                        expected_mime_type=uploaded_file.content_type,
+                    )
+                except FileValidationError as err:
+                    raise HTTPException(status_code=400, detail=str(err)) from err
+        """
+        if max_size is not None:
+            size = self._metadata.size
+            if size is None or size > max_size:
+                raise FileSizeError(size, max_size)
+
+        if allowed_mimes is not None and len(allowed_mimes) > 0:
+            mime_type = self._metadata.mime_type
+            if not mime_type or mime_type not in allowed_mimes:
+                raise FileMimeError(mime_type, allowed_mimes)
+
+        if expected_mime_type is not None:
+            # Magic-byte detection runs against the file's bytes. If detection
+            # disagrees with the caller's stated expectation, the upload's
+            # content does not match what the client claimed.
+            detected: str | None = None
+            data = await self.read()
+            if data:
+                detected, _ = detect_from_bytes(data)
+            if not detected or detected != expected_mime_type:
+                raise FileContentMismatchError(expected_mime_type, detected)
 
     # ------------------------------------------------------------------
     # Save / Move / Delete
