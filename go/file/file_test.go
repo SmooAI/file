@@ -53,6 +53,7 @@ func (m *mockS3Client) DeleteObject(ctx context.Context, params *s3.DeleteObject
 
 type mockPresignClient struct {
 	presignGetObjectFn func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error)
+	presignPutObjectFn func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error)
 }
 
 func (m *mockPresignClient) PresignGetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error) {
@@ -60,6 +61,13 @@ func (m *mockPresignClient) PresignGetObject(ctx context.Context, params *s3.Get
 		return m.presignGetObjectFn(ctx, params, optFns...)
 	}
 	return nil, fmt.Errorf("mock: PresignGetObject not implemented")
+}
+
+func (m *mockPresignClient) PresignPutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error) {
+	if m.presignPutObjectFn != nil {
+		return m.presignPutObjectFn(ctx, params, optFns...)
+	}
+	return nil, fmt.Errorf("mock: PresignPutObject not implemented")
 }
 
 // setMockS3 replaces the S3ClientFactory with a mock and returns a cleanup function.

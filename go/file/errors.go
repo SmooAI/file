@@ -62,3 +62,87 @@ func newError(sentinel error, op string, err error) *FileError {
 		Err:      err,
 	}
 }
+
+// ValidationKind enumerates the possible validation failure categories.
+// Callers can branch on this field after an errors.As against *FileValidationError.
+type ValidationKind string
+
+const (
+	// KindSize indicates the file exceeded the declared maxSize.
+	KindSize ValidationKind = "size"
+	// KindMime indicates the file's mime type was not in the declared allowlist.
+	KindMime ValidationKind = "mime"
+	// KindContentMismatch indicates the magic-byte-detected mime type disagreed
+	// with the caller's expected/claimed mime type.
+	KindContentMismatch ValidationKind = "content_mismatch"
+)
+
+// ErrFileValidation is the sentinel for all file validation failures. Use
+// errors.Is(err, ErrFileValidation) to catch any validation error, or errors.As
+// with *FileValidationError to inspect structured fields.
+var ErrFileValidation = errors.New("file: validation failed")
+
+// FileValidationError is the single validation error type, with a Kind field
+// that distinguishes size/mime/content-mismatch failures. This mirrors the
+// TypeScript FileSizeError / FileMimeError / FileContentMismatchError hierarchy
+// without requiring inheritance — callers use errors.As and then branch on Kind.
+//
+//	var vErr *FileValidationError
+//	if errors.As(err, &vErr) {
+//	    switch vErr.Kind {
+//	    case KindSize: ...
+//	    case KindMime: ...
+//	    case KindContentMismatch: ...
+//	    }
+//	}
+type FileValidationError struct {
+	// Kind is the category of validation failure.
+	Kind ValidationKind
+
+	// Size fields — populated when Kind == KindSize.
+	// ActualSize is -1 if the size is unknown.
+	ActualSize int64
+	MaxSize    int64
+
+	// Mime fields — populated when Kind == KindMime.
+	ActualMimeType string
+	AllowedMimes   []string
+
+	// Content-mismatch fields — populated when Kind == KindContentMismatch.
+	ClaimedMimeType  string
+	DetectedMimeType string
+}
+
+// Error returns a human-readable description of the validation failure.
+func (e *FileValidationError) Error() string {
+	switch e.Kind {
+	case KindSize:
+		if e.ActualSize < 0 {
+			return fmt.Sprintf("file: size is unknown; maxSize is %d bytes", e.MaxSize)
+		}
+		return fmt.Sprintf("file: size (%d bytes) exceeds maximum allowed (%d bytes)", e.ActualSize, e.MaxSize)
+	case KindMime:
+		if e.ActualMimeType == "" {
+			return fmt.Sprintf("file: mime type is unknown; allowed types are: %v", e.AllowedMimes)
+		}
+		return fmt.Sprintf("file: mime type %q is not in the allowed list: %v", e.ActualMimeType, e.AllowedMimes)
+	case KindContentMismatch:
+		claimed := e.ClaimedMimeType
+		if claimed == "" {
+			claimed = "unknown"
+		}
+		detected := e.DetectedMimeType
+		if detected == "" {
+			detected = "unknown"
+		}
+		return fmt.Sprintf("file: content does not match claimed mime type; claimed=%s detected=%s", claimed, detected)
+	default:
+		return fmt.Sprintf("file: validation failed (kind=%s)", e.Kind)
+	}
+}
+
+// Is reports whether target matches ErrFileValidation, enabling
+// errors.Is(err, ErrFileValidation) to catch any validation failure.
+func (e *FileValidationError) Is(target error) bool {
+	return target == ErrFileValidation
+}
