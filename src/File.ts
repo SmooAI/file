@@ -12,6 +12,9 @@ import mime from 'mime-types';
 import invariant from 'tiny-invariant';
 import fetch, { Response } from '@smooai/fetch';
 import ServerLogger from '@smooai/logger/AwsServerLogger';
+import { FileContentMismatchError, FileMimeError, FileSizeError, FileValidationError } from './errors';
+
+export { FileContentMismatchError, FileMimeError, FileSizeError, FileValidationError } from './errors';
 
 const logger = new ServerLogger();
 
@@ -313,6 +316,76 @@ export default class File {
     }
 
     /**
+     * Creates a new File instance from a Web `File` or `Blob` object — the kind you
+     * get from Hono `c.req.formData()`, Next.js server actions, or browser `<input type="file">`.
+     * Name and mime-type hints from the web File are preserved so validation and
+     * uploads don't have to re-derive them.
+     * @param {Blob | { name?: string; type?: string; arrayBuffer(): Promise<ArrayBuffer> }} webFile -
+     *   A Web `File` or `Blob`. Only `arrayBuffer()` is required; `name` / `type` are read if present.
+     * @param {MetadataHint} [metadataHint] - Optional metadata hints that override webFile's hints.
+     * @returns {Promise<File>} A new File instance
+     * @example
+     * // In a Hono multipart route
+     * const form = await c.req.formData();
+     * const uploadedFile = form.get('file') as File;
+     * const file = await SmooFile.createFromWebFile(uploadedFile);
+     * await file.validate({ maxSize: 5 * 1024 * 1024, allowedMimes: ['image/png', 'image/jpeg'] });
+     */
+    static async createFromWebFile(webFile: Blob & { name?: string; type?: string }, metadataHint?: MetadataHint): Promise<File> {
+        const bytes = await webFile.arrayBuffer();
+        return File.createFromBytes(bytes, {
+            name: webFile.name,
+            mimeType: webFile.type || undefined,
+            ...metadataHint,
+        });
+    }
+
+    /**
+     * Generates a presigned S3 PUT URL so a client can upload directly to S3
+     * without routing bytes through the server. Optional `maxSize` is baked into
+     * the signature so the client cannot upload a larger object than allowed.
+     *
+     * Centralizes the "server signs, client uploads" pattern so call sites don't
+     * each manage their own S3 client and PutObjectCommand.
+     *
+     * @param options - Upload parameters
+     * @param options.bucket - The S3 bucket name
+     * @param options.key - The S3 object key the client will PUT to
+     * @param options.contentType - Expected Content-Type header the client must send (signed)
+     * @param options.expiresIn - URL validity in seconds (default 3600)
+     * @param options.maxSize - Optional max content length in bytes; if provided,
+     *   the signed URL will reject uploads larger than this via the
+     *   `x-amz-content-length-range` check. Not all HTTP clients send this, so
+     *   servers should still validate on a subsequent HEAD.
+     * @returns {Promise<string>} The presigned URL
+     * @example
+     * const url = await SmooFile.createPresignedUploadUrl({
+     *   bucket: Resource.Bucket.name,
+     *   key: `avatars/${userId}.png`,
+     *   contentType: 'image/png',
+     *   expiresIn: 600,
+     *   maxSize: 2 * 1024 * 1024,
+     * });
+     */
+    static async createPresignedUploadUrl(options: {
+        bucket: string;
+        key: string;
+        contentType?: string;
+        expiresIn?: number;
+        maxSize?: number;
+    }): Promise<string> {
+        const { bucket, key, contentType, expiresIn = 3600, maxSize } = options;
+        const client = buildS3Client();
+        const command = new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            ContentType: contentType,
+            ContentLength: maxSize,
+        });
+        return getSignedUrl(client, command, { expiresIn });
+    }
+
+    /**
      * Creates a new File instance from a local file path.
      * @param {string} filePath - The path to the local file
      * @param {MetadataHint} [metadataHint] - Optional metadata hints
@@ -516,6 +589,77 @@ export default class File {
     async readFileString(): Promise<string> {
         const bytes = Buffer.from(await this.readFileBytes());
         return bytes.toString('utf-8');
+    }
+
+    /**
+     * Reads the file contents and returns a base64-encoded string. Useful for
+     * email attachments, data URLs, and APIs that require inline-encoded file bytes.
+     * @returns {Promise<string>} The file contents encoded as base64
+     * @example
+     * const b64 = await file.toBase64();
+     * sendEmail({ attachments: [{ filename: file.name, content: b64, encoding: 'base64' }] });
+     */
+    async toBase64(): Promise<string> {
+        const bytes = await this.readFileBytes();
+        return Buffer.from(bytes).toString('base64');
+    }
+
+    /**
+     * Validates the file against size, allowed-mime, and content-vs-claim rules.
+     * Throws a typed {@link FileValidationError} subclass on failure so callers
+     * (e.g. HTTP routes) can cleanly map to a 400 response without parsing messages.
+     *
+     * @param options - Validation rules. Any subset may be provided.
+     * @param options.maxSize - Maximum allowed size in bytes. Throws {@link FileSizeError} on failure.
+     * @param options.allowedMimes - Allowlist of acceptable mime types. Throws {@link FileMimeError}
+     *   if the file's mime type is not in the list. Uses the file's detected or hinted mime type.
+     * @param options.expectedMimeType - If provided, compares the magic-byte-detected
+     *   mime type against this expected value. Throws {@link FileContentMismatchError} if they
+     *   disagree — the primary defense against mime-spoofing (e.g. a `.php` file uploaded as
+     *   `image/png`). Pass the client-claimed `Content-Type` header here for upload validation.
+     *
+     * @example
+     * // In a multipart upload route
+     * try {
+     *   await file.validate({
+     *     maxSize: 5 * 1024 * 1024,
+     *     allowedMimes: ['image/png', 'image/jpeg', 'image/webp'],
+     *     expectedMimeType: uploadedFile.type, // the browser-sent Content-Type
+     *   });
+     * } catch (err) {
+     *   if (err instanceof FileValidationError) {
+     *     throw new HTTPException(400, { message: err.message });
+     *   }
+     *   throw err;
+     * }
+     */
+    async validate(options: { maxSize?: number; allowedMimes?: readonly string[]; expectedMimeType?: string }): Promise<void> {
+        const { maxSize, allowedMimes, expectedMimeType } = options;
+
+        if (maxSize !== undefined) {
+            const size = this.metadata.size;
+            if (size === undefined || size > maxSize) {
+                throw new FileSizeError(size, maxSize);
+            }
+        }
+
+        if (allowedMimes !== undefined && allowedMimes.length > 0) {
+            const mimeType = this.metadata.mimeType;
+            if (!mimeType || !allowedMimes.includes(mimeType)) {
+                throw new FileMimeError(mimeType, allowedMimes);
+            }
+        }
+
+        if (expectedMimeType !== undefined) {
+            // Magic-byte detection was performed during construction via
+            // FileTypeParser.toDetectionStream — stream.fileType holds that result.
+            // If detection disagrees with the caller's stated expectation, the
+            // upload's content does not match what the client claimed.
+            const detected = this._stream.fileType?.mime;
+            if (!detected || detected !== expectedMimeType) {
+                throw new FileContentMismatchError(expectedMimeType, detected);
+            }
+        }
     }
 
     /**
