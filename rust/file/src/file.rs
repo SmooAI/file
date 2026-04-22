@@ -14,11 +14,14 @@ use futures::StreamExt;
 use sha2::{Digest, Sha256};
 use tracing;
 
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use base64::Engine as _;
+
 use crate::content_disposition::parse_content_disposition;
 use crate::detection::{
     detect_from_bytes, detect_from_filename, extension_from_mime, mime_from_extension,
 };
-use crate::error::{FileError, Result};
+use crate::error::{FileError, FileValidationError, Result};
 use crate::metadata::{Metadata, MetadataHint};
 use crate::source::FileSource;
 
@@ -763,6 +766,75 @@ impl File {
             .await
     }
 
+    /// Generate a presigned S3 PUT URL so a client can upload directly to S3
+    /// without routing bytes through the server.
+    ///
+    /// Optional `max_size` is baked into the signature via `ContentLength` so
+    /// the client cannot upload a larger object than allowed. Not all HTTP
+    /// clients send the matching header, so servers should still validate on a
+    /// subsequent HEAD.
+    ///
+    /// Centralizes the "server signs, client uploads" pattern so call sites
+    /// don't each manage their own S3 client and PutObjectCommand.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use smooai_file::File;
+    /// # use smooai_file::file::PresignedUploadOptions;
+    /// # async fn example() -> smooai_file::error::Result<()> {
+    /// let url = File::create_presigned_upload_url(PresignedUploadOptions {
+    ///     bucket: "my-bucket".into(),
+    ///     key: "avatars/42.png".into(),
+    ///     content_type: Some("image/png".into()),
+    ///     expires_in: 600,
+    ///     max_size: Some(2 * 1024 * 1024),
+    /// })
+    /// .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn create_presigned_upload_url(options: PresignedUploadOptions) -> Result<String> {
+        let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+        let client = S3Client::new(&config);
+        Self::create_presigned_upload_url_with_client(&client, options).await
+    }
+
+    /// Same as [`File::create_presigned_upload_url`] but uses a caller-provided
+    /// S3 client. Useful for tests and for call sites that already have a
+    /// configured client.
+    pub async fn create_presigned_upload_url_with_client(
+        client: &S3Client,
+        options: PresignedUploadOptions,
+    ) -> Result<String> {
+        let PresignedUploadOptions {
+            bucket,
+            key,
+            content_type,
+            expires_in,
+            max_size,
+        } = options;
+
+        let presigning = PresigningConfig::expires_in(std::time::Duration::from_secs(expires_in))
+            .map_err(|e| FileError::S3(format!("Presigning config error: {}", e)))?;
+
+        let mut req = client.put_object().bucket(bucket).key(key);
+
+        if let Some(ct) = content_type {
+            req = req.content_type(ct);
+        }
+        if let Some(max) = max_size {
+            req = req.content_length(max as i64);
+        }
+
+        let presigned = req
+            .presigned(presigning)
+            .await
+            .map_err(|e| FileError::S3(format!("Presigning error: {}", e)))?;
+
+        Ok(presigned.uri().to_string())
+    }
+
     /// Generate a presigned URL using a provided S3 client.
     pub async fn get_signed_url_with_client(
         &self,
@@ -790,6 +862,101 @@ impl File {
             .map_err(|e| FileError::S3(format!("Presigning error: {}", e)))?;
 
         Ok(presigned.uri().to_string())
+    }
+
+    // -----------------------------------------------------------------------
+    // Validation & encoding
+    // -----------------------------------------------------------------------
+
+    /// Validate the file against size, allowed-mime, and content-vs-claim
+    /// rules. Returns `Err(FileValidationError)` on the first failing rule
+    /// so callers (e.g. HTTP routes) can cleanly map to a 400 response without
+    /// parsing messages.
+    ///
+    /// All three rules are independent; pass only the ones you need.
+    ///
+    /// - `max_size`: Maximum allowed size in bytes. Returns
+    ///   [`FileValidationError::SizeExceeded`] if the file's size is unknown
+    ///   or greater than `max_size`.
+    /// - `allowed_mimes`: Allowlist of acceptable mime types. Returns
+    ///   [`FileValidationError::MimeNotAllowed`] if the file's mime type is
+    ///   missing or not in the list. An empty slice is treated as "no mime
+    ///   restriction" and is skipped.
+    /// - `expected_mime_type`: If `Some(_)`, compares the file's
+    ///   magic-byte-detected mime type against the expected value. Returns
+    ///   [`FileValidationError::ContentMismatch`] if they disagree — the
+    ///   primary defense against mime-spoofing (e.g. a `.php` file uploaded
+    ///   as `image/png`). Pass the client-claimed `Content-Type` header here.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use smooai_file::{File, FileValidationError};
+    /// # use bytes::Bytes;
+    /// # async fn example() -> Result<(), FileValidationError> {
+    /// # let file = File::from_bytes(Bytes::from(b"hi".to_vec()), None).await.unwrap();
+    /// file.validate(
+    ///     Some(5 * 1024 * 1024),
+    ///     Some(&["image/png".into(), "image/jpeg".into()]),
+    ///     Some("image/png"),
+    /// )?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn validate(
+        &self,
+        max_size: Option<u64>,
+        allowed_mimes: Option<&[String]>,
+        expected_mime_type: Option<&str>,
+    ) -> std::result::Result<(), FileValidationError> {
+        if let Some(max) = max_size {
+            let size = self.metadata.size;
+            match size {
+                Some(s) if s <= max => {}
+                _ => {
+                    return Err(FileValidationError::SizeExceeded { actual: size, max });
+                }
+            }
+        }
+
+        if let Some(allowed) = allowed_mimes {
+            if !allowed.is_empty() {
+                let mime = self.metadata.mime_type.as_deref();
+                let ok = match mime {
+                    Some(m) => allowed.iter().any(|a| a == m),
+                    None => false,
+                };
+                if !ok {
+                    return Err(FileValidationError::MimeNotAllowed {
+                        actual: mime.map(|s| s.to_string()),
+                        allowed: allowed.to_vec(),
+                    });
+                }
+            }
+        }
+
+        if let Some(expected) = expected_mime_type {
+            // Run magic-byte detection against the actual bytes so we don't
+            // trust the (possibly spoofed) mime hint that was stored in
+            // metadata during construction.
+            let detection = detect_from_bytes(&self.data, self.metadata.name.as_deref());
+            let detected = detection.mime_type.as_deref();
+            if detected != Some(expected) {
+                return Err(FileValidationError::ContentMismatch {
+                    claimed: Some(expected.to_string()),
+                    detected: detected.map(|s| s.to_string()),
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Read the file contents and return a standard (padded) base64-encoded
+    /// string. Useful for email attachments, data URLs, and APIs that require
+    /// inline-encoded file bytes.
+    pub async fn to_base64(&self) -> Result<String> {
+        Ok(BASE64_STANDARD.encode(&self.data))
     }
 
     // -----------------------------------------------------------------------
@@ -856,6 +1023,37 @@ impl std::fmt::Debug for File {
             .field("metadata", &self.metadata)
             .field("data_len", &self.data.len())
             .finish()
+    }
+}
+
+/// Parameters for [`File::create_presigned_upload_url`].
+///
+/// Mirrors the TypeScript options bag. `expires_in` is in seconds and
+/// defaults to 3600 via [`Default`].
+#[derive(Debug, Clone)]
+pub struct PresignedUploadOptions {
+    /// The S3 bucket name.
+    pub bucket: String,
+    /// The S3 object key the client will PUT to.
+    pub key: String,
+    /// Expected `Content-Type` header the client must send (signed).
+    pub content_type: Option<String>,
+    /// URL validity in seconds.
+    pub expires_in: u64,
+    /// Optional max content length in bytes. When set, the signed URL will
+    /// reject uploads larger than this via the signed `Content-Length`.
+    pub max_size: Option<u64>,
+}
+
+impl Default for PresignedUploadOptions {
+    fn default() -> Self {
+        Self {
+            bucket: String::new(),
+            key: String::new(),
+            content_type: None,
+            expires_in: 3600,
+            max_size: None,
+        }
     }
 }
 
@@ -1024,5 +1222,167 @@ mod tests {
         let text = file.read_text().await.unwrap();
         assert_eq!(text, "hello world");
         assert_eq!(file.size(), Some(11));
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests for ported helpers: validate, to_base64, create_presigned_upload_url
+    // -----------------------------------------------------------------------
+
+    /// Minimal PNG byte sequence that `infer` recognises — the 8-byte
+    /// signature is sufficient for magic-byte detection. A little trailing
+    /// padding makes size checks meaningful.
+    fn png_bytes() -> Bytes {
+        let mut v = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        v.extend_from_slice(&[0u8; 24]);
+        Bytes::from(v)
+    }
+
+    async fn png_file() -> File {
+        let hint = Metadata {
+            name: Some("pic.png".to_string()),
+            mime_type: Some("image/png".to_string()),
+            ..Default::default()
+        };
+        File::from_bytes(png_bytes(), Some(hint)).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_validate_passes_when_all_constraints_satisfied() {
+        let file = png_file().await;
+        let allowed = vec!["image/png".to_string()];
+        let result = file.validate(Some(1024), Some(&allowed), Some("image/png"));
+        assert!(result.is_ok(), "expected Ok, got {:?}", result);
+    }
+
+    #[tokio::test]
+    async fn test_validate_noop_when_no_options() {
+        let file = png_file().await;
+        assert!(file.validate(None, None, None).is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_validate_size_exceeded() {
+        let file = png_file().await;
+        let err = file.validate(Some(5), None, None).unwrap_err();
+        match err {
+            FileValidationError::SizeExceeded { actual, max } => {
+                assert_eq!(actual, Some(32));
+                assert_eq!(max, 5);
+            }
+            other => panic!("expected SizeExceeded, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_validate_mime_not_allowed() {
+        let file = png_file().await;
+        let allowed = vec!["application/pdf".to_string()];
+        let err = file.validate(None, Some(&allowed), None).unwrap_err();
+        match err {
+            FileValidationError::MimeNotAllowed {
+                actual,
+                allowed: allow_vec,
+            } => {
+                assert_eq!(actual.as_deref(), Some("image/png"));
+                assert_eq!(allow_vec, vec!["application/pdf".to_string()]);
+            }
+            other => panic!("expected MimeNotAllowed, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_validate_empty_allowed_mimes_is_noop() {
+        let file = png_file().await;
+        let allowed: Vec<String> = vec![];
+        assert!(file.validate(None, Some(&allowed), None).is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_validate_content_mismatch_catches_spoofed_mime() {
+        // Caller claims the client sent a PDF but the bytes are a PNG — classic
+        // mime-spoofing. Detection runs against the raw bytes, ignoring the
+        // (lying) mime hint stored in metadata.
+        let spoofed_hint = Metadata {
+            name: Some("spoofed.pdf".to_string()),
+            mime_type: Some("application/pdf".to_string()),
+            ..Default::default()
+        };
+        let file = File::from_bytes(png_bytes(), Some(spoofed_hint))
+            .await
+            .unwrap();
+
+        let err = file
+            .validate(None, None, Some("application/pdf"))
+            .unwrap_err();
+        match err {
+            FileValidationError::ContentMismatch { claimed, detected } => {
+                assert_eq!(claimed.as_deref(), Some("application/pdf"));
+                assert_eq!(detected.as_deref(), Some("image/png"));
+            }
+            other => panic!("expected ContentMismatch, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_to_base64_encodes_bytes() {
+        // "foo" -> "Zm9v"
+        let file = File::from_bytes(Bytes::from_static(b"foo"), None)
+            .await
+            .unwrap();
+        assert_eq!(file.to_base64().await.unwrap(), "Zm9v");
+    }
+
+    #[tokio::test]
+    async fn test_to_base64_empty() {
+        let file = File::from_bytes(Bytes::new(), None).await.unwrap();
+        assert_eq!(file.to_base64().await.unwrap(), "");
+    }
+
+    #[tokio::test]
+    async fn test_presigned_upload_options_defaults_expires_in() {
+        let opts = PresignedUploadOptions {
+            bucket: "b".into(),
+            key: "k".into(),
+            ..Default::default()
+        };
+        assert_eq!(opts.expires_in, 3600);
+        assert!(opts.content_type.is_none());
+        assert!(opts.max_size.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_create_presigned_upload_url_with_client_builds_signed_url() {
+        // Build a minimal S3 client pointed at a fake region with static
+        // creds — presigning is offline, no network call is made, but we
+        // exercise the full `create_presigned_upload_url_with_client` path
+        // including ContentType + ContentLength binding.
+        use aws_sdk_s3::config::{Credentials, Region};
+
+        let creds = Credentials::new("AKIA_TEST", "secret", None, None, "test");
+        let cfg = aws_sdk_s3::Config::builder()
+            .behavior_version(BehaviorVersion::latest())
+            .region(Region::new("us-east-1"))
+            .credentials_provider(creds)
+            .build();
+        let client = S3Client::from_conf(cfg);
+
+        let url = File::create_presigned_upload_url_with_client(
+            &client,
+            PresignedUploadOptions {
+                bucket: "my-bucket".into(),
+                key: "uploads/test.png".into(),
+                content_type: Some("image/png".into()),
+                expires_in: 600,
+                max_size: Some(1024),
+            },
+        )
+        .await
+        .unwrap();
+
+        // SigV4-presigned URLs always carry these query params.
+        assert!(url.contains("X-Amz-Signature="), "missing signature: {url}");
+        assert!(url.contains("X-Amz-Expires=600"), "wrong expiry: {url}");
+        assert!(url.contains("my-bucket"));
+        assert!(url.contains("uploads/test.png"));
     }
 }

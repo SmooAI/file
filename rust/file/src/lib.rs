@@ -35,8 +35,8 @@ pub mod metadata;
 pub mod source;
 
 // Re-export primary types at the crate root for convenience.
-pub use crate::error::FileError;
-pub use crate::file::File;
+pub use crate::error::{FileError, FileValidationError};
+pub use crate::file::{File, PresignedUploadOptions};
 pub use crate::metadata::{Metadata, MetadataHint};
 pub use crate::source::FileSource;
 
