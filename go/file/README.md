@@ -41,7 +41,7 @@ Check out other SmooAI packages at [smoo.ai/open-source](https://smoo.ai/open-so
 
 ## About smooai-file (Go)
 
-A powerful file handling package for Go that provides a unified interface for working with files from local filesystem, S3, URLs, bytes, and streams. Built with memory efficiency in mind — file bytes are eagerly buffered but the interface is designed for minimal allocations and straightforward, idiomatic Go error handling.
+**File operations that don't lie** — magic-byte MIME detection catches spoofed extensions, size + content validation is built in, and local / URL / S3 / bytes / stream sources all speak the same typed Go API. Interface-backed S3 and HTTP clients so tests mock cleanly.
 
 ![GitHub License](https://img.shields.io/github/license/SmooAI/file?style=for-the-badge)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/SmooAI/file/release.yml?style=for-the-badge)

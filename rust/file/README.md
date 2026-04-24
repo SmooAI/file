@@ -41,7 +41,7 @@ Check out other SmooAI packages at [smoo.ai/open-source](https://smoo.ai/open-so
 
 ## About smooai-file (Rust)
 
-A powerful file handling crate for Rust that provides a unified async interface for working with files from local filesystem, S3, URLs, bytes, and streams. Built stream-first for memory efficiency — leveraging Tokio's async runtime and the `bytes::Bytes` type for zero-copy data handling where possible.
+**File operations that don't lie** — magic-byte MIME detection catches spoofed extensions, size + content validation is built in, and local / URL / S3 / bytes / stream sources all speak the same typed async API. Stream-first and zero-copy where it counts, so large uploads don't buffer into memory.
 
 ![Crates.io Version](https://img.shields.io/crates/v/smooai-file?style=for-the-badge)
 ![Crates.io Downloads](https://img.shields.io/crates/d/smooai-file?style=for-the-badge)
