@@ -67,12 +67,12 @@ file.Validate(allowedMimes: new[] { "image/png", "image/jpeg" });
 
 One base class — one `catch` block on the controller. All typed, all actionable, all 400-worthy:
 
-| Exception | When |
-|---|---|
-| `FileSizeException` | File exceeds `maxSize` |
-| `FileMimeException` | MIME not in `allowedMimes` |
+| Exception                      | When                                                        |
+| ------------------------------ | ----------------------------------------------------------- |
+| `FileSizeException`            | File exceeds `maxSize`                                      |
+| `FileMimeException`            | MIME not in `allowedMimes`                                  |
 | `FileContentMismatchException` | Client-claimed MIME disagrees with magic-byte-detected MIME |
-| `FileValidationException` | Base class — catch this to handle all validation failures |
+| `FileValidationException`      | Base class — catch this to handle all validation failures   |
 
 ```csharp
 try
