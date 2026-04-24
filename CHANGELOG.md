@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 2.2.1
+
+### Patch Changes
+
+- 6c73caf: SMOODEV-662: Sync SmooAI.File + SmooAI.File.S3 NuGet versions to package.json + polish NuGet READMEs
+
 ## 2.2.0
 
 ### Minor Changes
