@@ -1,6 +1,6 @@
 {
     "name": "@smooai/file",
-    "version": "2.2.2",
+    "version": "2.2.3",
     "description": "File operations that don't lie — magic-byte MIME detection catches spoofed extensions, size + content validation is built in, and presigned S3 uploads are one call away. Stream-first so large uploads don't blow your memory.",
     "homepage": "https://github.com/SmooAI/file#readme",
     "bugs": {
