@@ -41,7 +41,7 @@ This library is part of a small family of open-source packages we maintain to ke
 
 ## About @smooai/file
 
-A powerful file handling library for Node.js that provides a unified interface for working with files from local filesystem, S3, URLs, and more. Built with streaming in mind, it handles file bytes lazily where possible to minimize memory usage and improve performance.
+**File operations that don't lie** — magic-byte MIME detection catches spoofed extensions, size + content validation is built in, and presigned S3 uploads are one call away. Stream-first so a 2 GB upload doesn't blow your Lambda memory.
 
 ![NPM Version](https://img.shields.io/npm/v/%40smooai%2Ffile?style=for-the-badge)
 ![NPM Downloads](https://img.shields.io/npm/dw/%40smooai%2Ffile?style=for-the-badge)
@@ -74,55 +74,34 @@ Language-specific source code lives in the [`python/`](./python/), [`rust/`](./r
 
 The .NET port uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for magic-byte MIME sniffing and splits S3 helpers into a sub-package so consumers who don't need AWS avoid pulling in the AWS SDK.
 
-### Key Features
+### What you get
 
-#### 🚀 Stream-First Design
+#### 🔒 Trust the bytes, not the extension
 
-- Lazy loading of file contents
-- Memory-efficient processing
-- Automatic stream handling
-- Support for both Node.js and Web streams
+Magic-byte MIME detection catches spoofed uploads. A `.php` renamed to `avatar.png` fails validation because the bytes disagree with the claim.
 
-#### 📦 Multiple File Sources
+- Magic-byte detection across 100+ file types
+- `FileContentMismatchError` when client-claimed MIME disagrees with the bytes
+- `FileSizeError` / `FileMimeError` for oversize or disallowed uploads
+- One `validate()` call, typed error types, map cleanly to HTTP 400
 
-- **Local Filesystem**
-    - Read and write operations
-    - File system checks
-    - Metadata extraction
+#### ☁️ S3 in one call
 
-- **URLs**
-    - Automatic download
-    - Stream-based transfer
-    - Header metadata extraction
+- Stream any file (local, URL, Blob) straight into S3
+- Pull S3 objects back through the same validation pipeline
+- Presigned upload URLs with `maxSize` baked into the signature, so oversized uploads are rejected by S3 before they hit you
 
-- **S3 Objects**
-    - Direct S3 integration (download and upload)
-    - Stream-based transfer
-    - Header metadata extraction
-    - Signed URL generation
+#### 🌐 One API, many sources
 
-- **FormData**
-    - Ease of use for Multipart FormData upload
+Local filesystem, URL download, S3 object, multipart FormData, or a browser `File`/`Blob` — all resolve to the same `File` instance with the same validation and metadata surface.
 
-#### 🔍 Intelligent File Type Detection
+#### 🚀 Stream-first under the hood
 
-Powered by [file-type](https://github.com/sindresorhus/file-type), providing:
+Bytes load lazily so a 2 GB upload doesn't buffer into memory. Automatic handling across Node.js and Web streams — you never have to pick the right pipe.
 
-- Magic number detection
-- MIME type inference
-- File extension detection
-- Support for 100+ file types
+#### 📝 Rich metadata
 
-#### 📝 Rich Metadata
-
-- File name and extension
-- MIME type detection
-- File size
-- Last modified date
-- Creation date
-- File hash/checksum
-- URL and path information
-- Source type
+File name, real (detected) MIME type, size, created/modified timestamps, hash/checksum, source type — all on one object.
 
 ### Examples
 

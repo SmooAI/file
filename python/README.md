@@ -41,7 +41,7 @@ Check out other SmooAI packages at [smoo.ai/open-source](https://smoo.ai/open-so
 
 ## About smooai-file (Python)
 
-A powerful file handling library for Python that provides a unified async interface for working with files from local filesystem, S3, URLs, bytes, and streams. Built stream-first for memory efficiency — file bytes are handled lazily where possible to minimize memory pressure and improve performance.
+**File operations that don't lie** — magic-byte MIME detection catches spoofed extensions, size + content validation is built in, and local / URL / S3 / bytes / stream sources all speak the same typed async API. Stream-first so a large upload doesn't blow your memory.
 
 ![PyPI Version](https://img.shields.io/pypi/v/smooai-file?style=for-the-badge)
 ![PyPI Downloads](https://img.shields.io/pypi/dw/smooai-file?style=for-the-badge)
