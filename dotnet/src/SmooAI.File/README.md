@@ -1,8 +1,8 @@
 # SmooAI.File
 
-.NET port of [`@smooai/file`](https://github.com/SmooAI/file). Provides a
-`SmooFile` wrapper that uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective)
-for magic-byte MIME detection and typed validation errors.
+**Magic-byte MIME detection, typed validation errors, and stream helpers for .NET — because `Content-Type` headers lie.**
+
+.NET port of [`@smooai/file`](https://github.com/SmooAI/file). Built on [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for real MIME sniffing (not extension guessing). Wire-compatible semantics with the TypeScript, Python, Go, and Rust ports.
 
 ## Install
 
@@ -10,57 +10,102 @@ for magic-byte MIME detection and typed validation errors.
 dotnet add package SmooAI.File
 ```
 
-For S3 upload/download helpers, also add:
+Need S3 upload/download helpers? Add the companion package:
 
 ```bash
 dotnet add package SmooAI.File.S3
 ```
 
-The S3 helpers are intentionally split so apps that don't need AWS don't pull in `AWSSDK.S3`.
+Split on purpose — apps that only need MIME detection and validation don't pull in `AWSSDK.S3`.
 
-## Usage
+## Quick start
 
 ```csharp
 using SmooAI.File;
 
-// From a stream (e.g. multipart upload)
+// From an ASP.NET Core upload
 await using var upload = formFile.OpenReadStream();
 var file = await SmooFile.CreateFromStreamAsync(upload, options =>
 {
-    options.Name = formFile.FileName;
-    options.MaxSizeBytes = 10_000_000;
+    options.Name             = formFile.FileName;
+    options.ExpectedMimeType = formFile.ContentType;   // client-claimed
+    options.MaxSizeBytes     = 10_000_000;
     options.AllowedMimeTypes = new[] { "image/png", "image/jpeg", "application/pdf" };
 });
 
-file.Validate(
-    maxSize: 10_000_000,
-    allowedMimes: new[] { "image/png", "image/jpeg", "application/pdf" },
-    expectedMimeType: formFile.ContentType);
+// One call — throws typed exceptions on violation
+file.Validate();
 
-// Read as base64 for an email attachment or data URL
+// Detected MIME reflects what the bytes *actually* are
+Console.WriteLine(file.Detected.MimeType);   // e.g. "image/png"
+
+// Emit as base64 for an email attachment / data URL
 var b64 = await file.ToBase64Async();
 
-// Or save it to disk
+// Or persist
 await file.SaveToFileAsync("/tmp/upload.bin");
 ```
 
 ## Why magic-byte detection
 
-File extensions and `Content-Type` headers lie. `file.docx` may actually be a
-ZIP, a `.php` can be uploaded as `image/png`. `SmooFile.Detected.MimeType`
-always reflects what the file actually contains, and `Validate(expectedMimeType:
-…)` throws a typed `FileContentMismatchException` when claims disagree.
+File extensions and `Content-Type` headers are untrusted client input. `file.docx` may actually be a ZIP. A `.php` can masquerade as `image/png`. `SmooFile.Detected.MimeType` reflects the real bytes — and `Validate(expectedMimeType: …)` throws `FileContentMismatchException` the moment claim disagrees with content.
+
+```csharp
+// Client uploads a PHP shell renamed to avatar.png
+var file = await SmooFile.CreateFromStreamAsync(stream, opts =>
+{
+    opts.Name             = "avatar.png";
+    opts.ExpectedMimeType = "image/png";
+});
+
+file.Validate(allowedMimes: new[] { "image/png", "image/jpeg" });
+// -> throws FileContentMismatchException
+//    Detected: "text/x-php", Expected: "image/png"
+```
 
 ## Validation errors
 
-All validation errors derive from `FileValidationException`, so one `catch`
-block maps to a `400` response:
+One base class — one `catch` block on the controller. All typed, all actionable, all 400-worthy:
 
-- `FileSizeException` — file exceeds `maxSize`
-- `FileMimeException` — MIME not in `allowedMimes`
-- `FileContentMismatchException` — client-claimed MIME disagrees with
-  magic-byte-detected MIME
+| Exception | When |
+|---|---|
+| `FileSizeException` | File exceeds `maxSize` |
+| `FileMimeException` | MIME not in `allowedMimes` |
+| `FileContentMismatchException` | Client-claimed MIME disagrees with magic-byte-detected MIME |
+| `FileValidationException` | Base class — catch this to handle all validation failures |
+
+```csharp
+try
+{
+    file.Validate();
+}
+catch (FileValidationException ex)
+{
+    return Results.Problem(ex.Message, statusCode: 400);
+}
+```
+
+## Creating from other sources
+
+```csharp
+// From a byte buffer
+var file = await SmooFile.CreateFromBytesAsync(bytes, opts => { opts.Name = "thing.bin"; });
+
+// From a file path
+var file = await SmooFile.CreateFromPathAsync("/tmp/upload.bin");
+
+// From a URL (streams, doesn't buffer the full body into memory)
+var file = await SmooFile.CreateFromUrlAsync("https://example.com/report.pdf");
+```
+
+## Related
+
+- [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) — presigned uploads + S3 helpers (split package)
+- [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) — TypeScript / Node
+- [`smooai-file`](https://crates.io/crates/smooai-file) — Rust
+- [`smooai-file`](https://pypi.org/project/smooai-file/) — Python
+- [`github.com/SmooAI/file/go/file`](https://github.com/SmooAI/file/tree/main/go/file) — Go
 
 ## License
 
-MIT
+MIT — © SmooAI

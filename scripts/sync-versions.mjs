@@ -32,6 +32,16 @@ const files = [
         pattern: /const Version = ".*"/,
         replacement: `const Version = "${version}"`,
     },
+    {
+        path: join(rootDir, 'dotnet', 'src', 'SmooAI.File', 'SmooAI.File.csproj'),
+        pattern: /<Version>.*<\/Version>/,
+        replacement: `<Version>${version}</Version>`,
+    },
+    {
+        path: join(rootDir, 'dotnet', 'src', 'SmooAI.File.S3', 'SmooAI.File.S3.csproj'),
+        pattern: /<Version>.*<\/Version>/,
+        replacement: `<Version>${version}</Version>`,
+    },
 ];
 
 for (const file of files) {
