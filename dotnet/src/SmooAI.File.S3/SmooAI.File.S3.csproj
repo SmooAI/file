@@ -1,10 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Multi-target so NuGet consumers on every current .NET LTS + STS release
+         (8, 9, 10) get a native lib/ folder match. Clear the single-TFM
+         <TargetFramework> inherited from Directory.Build.props — when both
+         are set the singular wins, which would collapse us back to net8.0. -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <PackageId>SmooAI.File.S3</PackageId>
     <RootNamespace>SmooAI.File.S3</RootNamespace>
     <AssemblyName>SmooAI.File.S3</AssemblyName>
-    <Version>2.2.0</Version>
+    <Version>2.2.3</Version>
     <Description>S3 helpers for SmooAI.File — createPresignedUploadUrl, createFromS3, uploadToS3, saveToS3.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
