@@ -134,17 +134,15 @@ jobs:
             - name: Pack and publish SmooAI.File + SmooAI.File.S3 to NuGet
               if: steps.changesets.outputs.published == 'true'
               run: |
+                  # Version is sourced from csproj <Version>, which sync-versions.mjs
+                  # kept in lockstep with package.json before changeset publish ran.
                   VERSION=$(node -p "require('./package.json').version")
-                  echo "Packing .NET version ${VERSION}"
+                  echo "Packing .NET version ${VERSION} (from csproj)"
                   dotnet pack dotnet/src/SmooAI.File/SmooAI.File.csproj \
                       --configuration Release \
-                      -p:Version=${VERSION} \
-                      -p:PackageVersion=${VERSION} \
                       -o dotnet/artifacts
                   dotnet pack dotnet/src/SmooAI.File.S3/SmooAI.File.S3.csproj \
                       --configuration Release \
-                      -p:Version=${VERSION} \
-                      -p:PackageVersion=${VERSION} \
                       -o dotnet/artifacts
 
                   for pkg in dotnet/artifacts/*.nupkg; do

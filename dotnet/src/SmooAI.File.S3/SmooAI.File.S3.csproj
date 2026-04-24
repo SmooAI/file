@@ -4,6 +4,7 @@
     <PackageId>SmooAI.File.S3</PackageId>
     <RootNamespace>SmooAI.File.S3</RootNamespace>
     <AssemblyName>SmooAI.File.S3</AssemblyName>
+    <Version>2.2.0</Version>
     <Description>S3 helpers for SmooAI.File — createPresignedUploadUrl, createFromS3, uploadToS3, saveToS3.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
