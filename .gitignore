@@ -56,3 +56,8 @@ __pycache__/
 
 # Local test/integration logs — regenerated on every run
 .smooai-logs/
+
+# .NET build artifacts
+dotnet/**/bin/
+dotnet/**/obj/
+dotnet/artifacts/

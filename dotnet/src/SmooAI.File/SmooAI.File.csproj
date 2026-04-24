@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>SmooAI.File</PackageId>
+    <RootNamespace>SmooAI.File</RootNamespace>
+    <AssemblyName>SmooAI.File</AssemblyName>
+    <Description>File utilities with magic-byte MIME detection (via Mime-Detective) and typed validation errors. Use SmooAI.File.S3 for S3 upload/download helpers.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mime-Detective" Version="25.8.1" />
+    <PackageReference Include="Mime-Detective.Definitions.Exhaustive" Version="25.8.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
