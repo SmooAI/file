@@ -59,16 +59,20 @@ pnpm add @smooai/file
 
 ### Multi-Language Support
 
-@smooai/file is available as native implementations in **TypeScript**, **Python**, **Rust**, and **Go** — each built with idiomatic patterns for its ecosystem.
+@smooai/file is available as native implementations in **TypeScript**, **Python**, **Rust**, **Go**, and **.NET (C#)** — each built with idiomatic patterns for its ecosystem.
 
-| Language   | Package                                                      | Install                                 |
-| ---------- | ------------------------------------------------------------ | --------------------------------------- |
-| TypeScript | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) | `pnpm add @smooai/file`                 |
-| Python     | [`smooai-file`](https://pypi.org/project/smooai-file/)       | `pip install smooai-file`               |
-| Rust       | [`smooai-file`](https://crates.io/crates/smooai-file)        | `cargo add smooai-file`                 |
-| Go         | `github.com/SmooAI/file/go/file`                             | `go get github.com/SmooAI/file/go/file` |
+| Language    | Package                                                           | Install                                 |
+| ----------- | ----------------------------------------------------------------- | --------------------------------------- |
+| TypeScript  | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file)      | `pnpm add @smooai/file`                 |
+| Python      | [`smooai-file`](https://pypi.org/project/smooai-file/)            | `pip install smooai-file`               |
+| Rust        | [`smooai-file`](https://crates.io/crates/smooai-file)             | `cargo add smooai-file`                 |
+| Go          | `github.com/SmooAI/file/go/file`                                  | `go get github.com/SmooAI/file/go/file` |
+| .NET (core) | [`SmooAI.File`](https://www.nuget.org/packages/SmooAI.File)       | `dotnet add package SmooAI.File`        |
+| .NET (S3)   | [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) | `dotnet add package SmooAI.File.S3`     |
 
-Language-specific source code lives in the [`python/`](./python/), [`rust/`](./rust/), and [`go/`](./go/) directories.
+Language-specific source code lives in the [`python/`](./python/), [`rust/`](./rust/), [`go/`](./go/), and [`dotnet/`](./dotnet/) directories.
+
+The .NET port uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for magic-byte MIME sniffing and splits S3 helpers into a sub-package so consumers who don't need AWS avoid pulling in the AWS SDK.
 
 ### Key Features
 

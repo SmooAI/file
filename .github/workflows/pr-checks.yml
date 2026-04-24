@@ -46,6 +46,11 @@ jobs:
                   go-version: '1.23'
                   cache-dependency-path: go/file/go.sum
 
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: '8.0.x'
+
             - name: Install dependencies
               run: pnpm install
 
@@ -67,3 +72,10 @@ jobs:
 
             - name: Build
               run: pnpm build
+
+            - name: Build and test .NET
+              run: |
+                  dotnet restore
+                  dotnet build --configuration Release --no-restore
+                  dotnet test --configuration Release --no-build --logger "console;verbosity=minimal"
+              working-directory: dotnet

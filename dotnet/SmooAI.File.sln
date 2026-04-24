@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{345448EC-BCA9-432C-8121-E7D08EC01C92}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmooAI.File", "src\SmooAI.File\SmooAI.File.csproj", "{C21F1DE5-5556-40D6-BA15-881486EBFBDA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmooAI.File.S3", "src\SmooAI.File.S3\SmooAI.File.S3.csproj", "{8DC9DADA-A954-4CBE-A54C-628F6417AFB8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{44D2C1CC-3C86-4A04-8BE9-83C0720C8C65}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmooAI.File.Tests", "tests\SmooAI.File.Tests\SmooAI.File.Tests.csproj", "{67BA9023-6E31-48AE-B8B3-16CBEC60A77F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmooAI.File.S3.Tests", "tests\SmooAI.File.S3.Tests\SmooAI.File.S3.Tests.csproj", "{BFA87BC2-4078-4F00-A16E-E7ED98F38C58}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C21F1DE5-5556-40D6-BA15-881486EBFBDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C21F1DE5-5556-40D6-BA15-881486EBFBDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C21F1DE5-5556-40D6-BA15-881486EBFBDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C21F1DE5-5556-40D6-BA15-881486EBFBDA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DC9DADA-A954-4CBE-A54C-628F6417AFB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DC9DADA-A954-4CBE-A54C-628F6417AFB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DC9DADA-A954-4CBE-A54C-628F6417AFB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DC9DADA-A954-4CBE-A54C-628F6417AFB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67BA9023-6E31-48AE-B8B3-16CBEC60A77F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67BA9023-6E31-48AE-B8B3-16CBEC60A77F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67BA9023-6E31-48AE-B8B3-16CBEC60A77F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67BA9023-6E31-48AE-B8B3-16CBEC60A77F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFA87BC2-4078-4F00-A16E-E7ED98F38C58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFA87BC2-4078-4F00-A16E-E7ED98F38C58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFA87BC2-4078-4F00-A16E-E7ED98F38C58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFA87BC2-4078-4F00-A16E-E7ED98F38C58}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C21F1DE5-5556-40D6-BA15-881486EBFBDA} = {345448EC-BCA9-432C-8121-E7D08EC01C92}
+		{8DC9DADA-A954-4CBE-A54C-628F6417AFB8} = {345448EC-BCA9-432C-8121-E7D08EC01C92}
+		{67BA9023-6E31-48AE-B8B3-16CBEC60A77F} = {44D2C1CC-3C86-4A04-8BE9-83C0720C8C65}
+		{BFA87BC2-4078-4F00-A16E-E7ED98F38C58} = {44D2C1CC-3C86-4A04-8BE9-83C0720C8C65}
+	EndGlobalSection
+EndGlobal
