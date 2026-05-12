@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 2.2.8
+
+### Patch Changes
+
+- 799de6b: SMOODEV-954: Go — extend `CreatePresignedUploadURL` with `ContentDisposition` option so callers can pre-set the suggested filename for downloads (`attachment; filename="..."`) baked into the signed PUT URL. Brings Go to parity with TS/Rust/Python/.NET.
+
 ## 2.2.7
 
 ### Patch Changes
