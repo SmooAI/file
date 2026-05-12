@@ -39,6 +39,13 @@ public static class S3SmooFile
 
         using var response = await s3.GetObjectAsync(bucket, key, ct).ConfigureAwait(false);
 
+        // Prefer a filename hint from the object's Content-Disposition over the
+        // bare S3 key — clients that set Content-Disposition explicitly are
+        // signaling what the file should be called when downloaded.
+        var dispositionFilename = ContentDisposition.ExtractFilename(response.Headers.ContentDisposition);
+        if (!string.IsNullOrEmpty(dispositionFilename))
+            options.Name = dispositionFilename;
+
         options.MimeType ??= response.Headers.ContentType;
         options.Size ??= response.ContentLength > 0 ? response.ContentLength : (long?)null;
         options.Hash ??= response.ETag?.Trim('"');
