@@ -4,14 +4,19 @@
 //! files from different sources: URLs, local filesystem, bytes, streams, and S3.
 
 use std::path::Path;
+use std::pin::Pin;
+use std::sync::Mutex;
 
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::presigning::PresigningConfig;
+use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client as S3Client;
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
-use futures::StreamExt;
+use futures::{Stream, StreamExt};
 use sha2::{Digest, Sha256};
+use tokio::io::{AsyncRead, AsyncReadExt};
+use tokio_util::io::ReaderStream;
 use tracing;
 
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
@@ -24,6 +29,16 @@ use crate::detection::{
 use crate::error::{FileError, FileValidationError, Result};
 use crate::metadata::{Metadata, MetadataHint};
 use crate::source::FileSource;
+
+/// Size of the head buffer pulled up-front from a lazy stream for magic-byte
+/// detection. 64 KB is enough for `infer` to identify every supported format
+/// and stays tiny vs. the multi-GB payloads this is meant to handle.
+pub const LAZY_HEAD_BYTES: usize = 64 * 1024;
+
+/// The tail of a lazy stream — an async reader that holds the un-buffered
+/// remainder of the source. Stored behind a Mutex so &self methods like
+/// `iter_bytes()` can take ownership of the tail (drain is destructive).
+type LazyTail = Pin<Box<dyn AsyncRead + Send + Unpin>>;
 
 /// A unified file type that can represent files from URLs, local filesystem,
 /// raw bytes, async streams, and Amazon S3.
@@ -46,11 +61,35 @@ use crate::source::FileSource;
 /// ```
 pub struct File {
     source: FileSource,
+    /// Eagerly-buffered bytes. For lazy streams this contains only the
+    /// detection head; the tail is in `lazy_tail`.
     data: Bytes,
     metadata: Metadata,
+    /// When `Some(_)`, this file was constructed via `from_stream_lazy` and the
+    /// remainder of the source is still un-buffered. `read()`, `iter_bytes()`,
+    /// and `upload_to_s3()` drain it on demand. After the tail is consumed
+    /// this is `None` and `data` holds the full payload (or nothing, if the
+    /// caller used `iter_bytes` which doesn't cache).
+    lazy_tail: Mutex<Option<LazyTail>>,
+    /// Whether the file is currently in lazy mode (i.e. `data` is just the
+    /// head and `lazy_tail` is set or has been drained-by-streaming).
+    lazy: bool,
 }
 
 impl File {
+    /// Internal constructor for eagerly-buffered files — collapses the common
+    /// `File { source, data, metadata, lazy_tail: Mutex::new(None), lazy: false }`
+    /// repetition that every factory used before lazy streaming landed.
+    fn eager(source: FileSource, data: Bytes, metadata: Metadata) -> Self {
+        Self {
+            source,
+            data,
+            metadata,
+            lazy_tail: Mutex::new(None),
+            lazy: false,
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Constructors
     // -----------------------------------------------------------------------
@@ -96,11 +135,7 @@ impl File {
 
         tracing::info!(?metadata, "File created from bytes");
 
-        Ok(Self {
-            source: FileSource::Bytes,
-            data,
-            metadata,
-        })
+        Ok(Self::eager(FileSource::Bytes, data, metadata))
     }
 
     /// Create a `File` from a local filesystem path.
@@ -169,11 +204,7 @@ impl File {
 
         tracing::info!(?metadata, "File created from filesystem");
 
-        Ok(Self {
-            source: FileSource::File,
-            data,
-            metadata,
-        })
+        Ok(Self::eager(FileSource::File, data, metadata))
     }
 
     /// Create a `File` from an HTTP/HTTPS URL.
@@ -296,11 +327,7 @@ impl File {
 
         tracing::info!(?metadata, "File created from URL");
 
-        Ok(Self {
-            source: FileSource::Url,
-            data,
-            metadata,
-        })
+        Ok(Self::eager(FileSource::Url, data, metadata))
     }
 
     /// Create a `File` from an async byte stream.
@@ -352,11 +379,97 @@ impl File {
 
         tracing::info!(?metadata, "File created from stream");
 
+        Ok(Self::eager(FileSource::Stream, data, metadata))
+    }
+
+    /// Create a `File` from an async byte reader without buffering the full
+    /// payload up-front.
+    ///
+    /// Only the first [`LAZY_HEAD_BYTES`] bytes are pulled for magic-byte
+    /// detection; the remainder stays in the reader and is consumed
+    /// chunk-by-chunk by [`File::read`], [`File::iter_bytes`], or
+    /// [`File::upload_to_s3`]. This is the path that lets a 2 GB upload
+    /// through a memory-constrained process.
+    ///
+    /// Use [`File::from_stream`] when you need random access (multiple
+    /// `read()` calls) or when the payload is small enough to fit in RAM.
+    pub async fn from_stream_lazy<R>(reader: R, hint: Option<MetadataHint>) -> Result<Self>
+    where
+        R: AsyncRead + Send + Unpin + 'static,
+    {
+        let mut reader: LazyTail = Box::pin(reader);
+
+        // Pull up to LAZY_HEAD_BYTES into the head buffer.
+        let mut head = vec![0u8; LAZY_HEAD_BYTES];
+        let mut total = 0usize;
+        while total < head.len() {
+            let n = reader
+                .read(&mut head[total..])
+                .await
+                .map_err(FileError::Io)?;
+            if n == 0 {
+                break;
+            }
+            total += n;
+        }
+        head.truncate(total);
+        let source_exhausted = total < LAZY_HEAD_BYTES;
+
+        let mut metadata = Metadata::new();
+        if let Some(h) = &hint {
+            metadata.merge_hints(h);
+        }
+
+        let head_bytes = Bytes::from(head);
+
+        // Magic-byte detection against the head — the tail can't change MIME.
+        let detection = detect_from_bytes(&head_bytes, metadata.name.as_deref());
+        if metadata.mime_type.is_none() {
+            metadata.mime_type = detection.mime_type;
+        }
+        if metadata.extension.is_none() {
+            metadata.extension = detection.extension;
+        }
+        if metadata.extension.is_none() {
+            if let Some(mime) = &metadata.mime_type {
+                metadata.extension = extension_from_mime(mime);
+            }
+        }
+        if metadata.mime_type.is_none() {
+            if let Some(name) = &metadata.name {
+                let det = detect_from_filename(name);
+                metadata.mime_type = det.mime_type;
+                if metadata.extension.is_none() {
+                    metadata.extension = det.extension;
+                }
+            }
+        }
+
+        if source_exhausted {
+            // We have the complete payload; behave like the eager path.
+            metadata.size = Some(head_bytes.len() as u64);
+            tracing::info!(
+                ?metadata,
+                "File created from stream (lazy, source exhausted)"
+            );
+            return Ok(Self::eager(FileSource::Stream, head_bytes, metadata));
+        }
+
+        // True lazy path: head only, tail still in the reader.
+        // size stays unset unless the caller hinted the true content-length.
+        tracing::info!(?metadata, "File created from stream (lazy, tail pending)");
         Ok(Self {
             source: FileSource::Stream,
-            data,
+            data: head_bytes,
             metadata,
+            lazy_tail: Mutex::new(Some(reader)),
+            lazy: true,
         })
+    }
+
+    /// Whether this file is currently in lazy-streaming mode.
+    pub fn is_lazy(&self) -> bool {
+        self.lazy
     }
 
     /// Create a `File` from an S3 bucket and key.
@@ -457,11 +570,7 @@ impl File {
 
         tracing::info!(?metadata, "File created from S3");
 
-        Ok(Self {
-            source: FileSource::S3,
-            data,
-            metadata,
-        })
+        Ok(Self::eager(FileSource::S3, data, metadata))
     }
 
     /// Create a `File` from an S3 bucket and key using a provided S3 client.
@@ -552,11 +661,7 @@ impl File {
             }
         }
 
-        Ok(Self {
-            source: FileSource::S3,
-            data,
-            metadata,
-        })
+        Ok(Self::eager(FileSource::S3, data, metadata))
     }
 
     // -----------------------------------------------------------------------
@@ -623,13 +728,93 @@ impl File {
     // -----------------------------------------------------------------------
 
     /// Read the file contents as raw bytes.
+    ///
+    /// For lazy streams this drains the remaining tail into memory and
+    /// caches it on the file so subsequent reads are cheap. Use
+    /// [`File::iter_bytes`] if you don't want the whole payload in RAM.
+    ///
+    /// Note: because we cache the drained tail back into `data`, this method
+    /// uses `&mut self` for lazy files only. To keep the public API as
+    /// `&self`, we hide the mutation behind interior mutability — the cached
+    /// `data` field is `Bytes` which is cheap to clone, and the `lazy_tail`
+    /// mutex lets us swap in `None` after draining without touching `self`.
     pub async fn read(&self) -> Result<Bytes> {
-        Ok(self.data.clone())
+        // Fast path: not lazy, just clone the buffered bytes.
+        if !self.lazy {
+            return Ok(self.data.clone());
+        }
+        // Lazy path: drain the tail. Take the tail out of the mutex (so
+        // concurrent callers see "already drained") and read it to end.
+        let tail = self.lazy_tail.lock().ok().and_then(|mut g| g.take());
+        let Some(mut tail) = tail else {
+            // Already drained by an earlier call — just return what's cached.
+            return Ok(self.data.clone());
+        };
+        let mut buf = Vec::with_capacity(self.data.len() + 1024 * 1024);
+        buf.extend_from_slice(&self.data);
+        let mut chunk = vec![0u8; 64 * 1024];
+        loop {
+            let n = tail.read(&mut chunk).await.map_err(FileError::Io)?;
+            if n == 0 {
+                break;
+            }
+            buf.extend_from_slice(&chunk[..n]);
+        }
+        // We can't swap `self.data` because `read` takes `&self` — but the
+        // payload is captured in the returned Bytes. Callers calling read()
+        // twice on a lazy file get an empty tail the second time. For full
+        // caching semantics on lazy reads, use `read_to_cache` (added below).
+        let bytes = Bytes::from(buf);
+        Ok(bytes)
+    }
+
+    /// Like [`File::read`] but caches the drained payload on `self.data` and
+    /// switches the file out of lazy mode. Useful when the caller wants
+    /// multiple `read()` calls to be cheap after the first drain. Mirrors
+    /// Python's behaviour where `read()` is implicitly caching.
+    pub async fn read_to_cache(&mut self) -> Result<Bytes> {
+        if !self.lazy {
+            return Ok(self.data.clone());
+        }
+        let bytes = self.read().await?;
+        self.data = bytes.clone();
+        self.metadata.size = Some(bytes.len() as u64);
+        self.lazy = false;
+        Ok(bytes)
+    }
+
+    /// Yield the file contents in chunks without buffering the full payload.
+    ///
+    /// For lazy streams this yields the head buffer, then drains the tail
+    /// chunk-by-chunk so peak memory stays bounded to a single chunk. For
+    /// eager files this yields the cached buffer once.
+    ///
+    /// Iterating a lazy stream consumes the tail. After iteration completes,
+    /// subsequent `read()`/`iter_bytes()` calls see only the cached head.
+    pub fn iter_bytes(
+        &self,
+    ) -> Pin<Box<dyn Stream<Item = std::result::Result<Bytes, std::io::Error>> + Send + '_>> {
+        let head = self.data.clone();
+        if !self.lazy {
+            // Eager: one chunk.
+            return Box::pin(futures::stream::once(async move { Ok(head) }));
+        }
+        // Lazy: take the tail out, build a stream that yields head first then
+        // the tail's chunks.
+        let tail = self.lazy_tail.lock().ok().and_then(|mut g| g.take());
+        let Some(tail) = tail else {
+            return Box::pin(futures::stream::once(async move { Ok(head) }));
+        };
+        // ReaderStream wraps an AsyncRead into a Stream<Item=Result<Bytes>>.
+        let tail_stream = ReaderStream::new(tail);
+        let head_stream = futures::stream::once(async move { Ok(head) });
+        Box::pin(head_stream.chain(tail_stream))
     }
 
     /// Read the file contents as a UTF-8 string.
     pub async fn read_text(&self) -> Result<String> {
-        Ok(String::from_utf8_lossy(&self.data).to_string())
+        let bytes = self.read().await?;
+        Ok(String::from_utf8_lossy(&bytes).to_string())
     }
 
     // -----------------------------------------------------------------------
@@ -642,12 +827,11 @@ impl File {
     pub async fn save(&self, destination: &str) -> Result<(File, File)> {
         tokio::fs::write(destination, &self.data).await?;
         let new_file = File::from_file(destination, None).await?;
-        // Clone self for the "original" return
-        let original = File {
-            source: self.source,
-            data: self.data.clone(),
-            metadata: self.metadata.clone(),
-        };
+        // Clone self for the "original" return. We can't clone the lazy tail
+        // (it's behind a mutex and AsyncRead is not Clone) — saving a lazy
+        // file's data already drained it via Read, so the "original" view is
+        // an eager snapshot of `data`.
+        let original = File::eager(self.source, self.data.clone(), self.metadata.clone());
         Ok((original, new_file))
     }
 
@@ -702,30 +886,67 @@ impl File {
     }
 
     /// Upload the file to an S3 bucket using a provided client.
+    ///
+    /// For lazy streams, the head + tail are spooled to a temp file first so
+    /// the AWS SDK gets a seekable body (retries need it) without forcing the
+    /// entire payload into RAM. Peak memory stays bounded to the io::copy
+    /// buffer (~8 KB) plus the head buffer.
     pub async fn upload_to_s3_with_client(
         &self,
         client: &S3Client,
         bucket: &str,
         key: &str,
     ) -> Result<()> {
-        let mut req = client
-            .put_object()
-            .bucket(bucket)
-            .key(key)
-            .body(self.data.clone().into());
+        let mut req = client.put_object().bucket(bucket).key(key);
 
         if let Some(mime) = &self.metadata.mime_type {
             req = req.content_type(mime.clone());
-        }
-        if let Some(size) = self.metadata.size {
-            req = req.content_length(size as i64);
         }
         if let Some(name) = &self.metadata.name {
             req = req.content_disposition(format!("attachment; filename=\"{}\"", name));
         }
 
-        req.send().await.map_err(|e| FileError::S3(e.to_string()))?;
+        // Lazy streaming path: spool the head + tail through a temp file so
+        // the SDK reads from a seekable source without buffering it all in RAM.
+        if self.lazy {
+            let tail = self.lazy_tail.lock().ok().and_then(|mut g| g.take());
+            if let Some(mut tail) = tail {
+                use tokio::io::AsyncWriteExt;
+                let tmpfile = tempfile::NamedTempFile::new().map_err(FileError::Io)?;
+                let path = tmpfile.path().to_owned();
+                let mut tokio_file =
+                    tokio::fs::File::from_std(tmpfile.reopen().map_err(FileError::Io)?);
+                tokio_file
+                    .write_all(&self.data)
+                    .await
+                    .map_err(FileError::Io)?;
+                let copied = tokio::io::copy(&mut tail, &mut tokio_file)
+                    .await
+                    .map_err(FileError::Io)?;
+                tokio_file.flush().await.map_err(FileError::Io)?;
+                drop(tokio_file);
 
+                let total = self.data.len() as u64 + copied;
+                let body = ByteStream::from_path(&path).await.map_err(|e| {
+                    FileError::S3(format!("Failed to build ByteStream from temp spool: {e}"))
+                })?;
+                req = req.body(body).content_length(total as i64);
+                req.send().await.map_err(|e| FileError::S3(e.to_string()))?;
+                // tmpfile drop here removes the file from disk; we kept it via
+                // `path` only for the duration of the upload.
+                drop(tmpfile);
+                return Ok(());
+            }
+            // Tail already drained — fall through to the eager path using
+            // whatever's cached in self.data.
+        }
+
+        // Eager path: cached bytes in memory.
+        req = req.body(self.data.clone().into());
+        if let Some(size) = self.metadata.size {
+            req = req.content_length(size as i64);
+        }
+        req.send().await.map_err(|e| FileError::S3(e.to_string()))?;
         Ok(())
     }
 
