@@ -274,7 +274,9 @@ public sealed class SmooFile
         using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        options.Name ??= ParseFilename(response.Content.Headers.ContentDisposition) ?? FilenameFromUrl(url);
+        options.Name ??= ContentDisposition.ExtractFilename(response.Content.Headers.ContentDisposition)
+            ?? ContentDisposition.ExtractFilename(GetRawContentDisposition(response))
+            ?? FilenameFromUrl(url);
         options.MimeType ??= response.Content.Headers.ContentType?.MediaType;
         options.Size ??= response.Content.Headers.ContentLength;
         options.LastModified ??= response.Content.Headers.LastModified;
@@ -314,10 +316,14 @@ public sealed class SmooFile
         return string.IsNullOrEmpty(ext) ? null : ext.TrimStart('.').ToLowerInvariant();
     }
 
-    private static string? ParseFilename(ContentDispositionHeaderValue? disposition)
+    private static string? GetRawContentDisposition(HttpResponseMessage response)
     {
-        if (disposition is null) return null;
-        return disposition.FileNameStar?.Trim('"') ?? disposition.FileName?.Trim('"');
+        if (response.Content.Headers.TryGetValues("Content-Disposition", out var values))
+        {
+            foreach (var v in values)
+                if (!string.IsNullOrEmpty(v)) return v;
+        }
+        return null;
     }
 
     private static string? FilenameFromUrl(string url)
