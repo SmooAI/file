@@ -72,7 +72,22 @@ type File struct {
 	loaded   bool   // whether data has been fully buffered
 	s3Bucket string // set when source is S3
 	s3Key    string // set when source is S3
+
+	// Lazy streaming state. When `lazy` is set, NewFromStream did NOT buffer
+	// the whole payload. Magic-byte detection ran against `streamHead` (first
+	// few KB), and the remainder is still in `streamTail` — drained chunk-by-
+	// chunk by Read(), IterBytes(), or UploadToS3 so a 2 GB upload never sits
+	// fully in RAM.
+	lazy       bool
+	streamHead []byte
+	streamTail io.Reader
 }
+
+// streamHeadBytes is the size of the head buffer read up-front for magic-byte
+// detection. 64 KB is more than enough for mimetype to identify every
+// supported format and stays tiny vs. the multi-GB payloads this is meant to
+// handle.
+const streamHeadBytes = 64 * 1024
 
 // --- Constructors ---
 
@@ -215,7 +230,9 @@ func NewFromMultipartFile(fh *multipart.FileHeader, hints ...MetadataHint) (*Fil
 }
 
 // NewFromStream creates a File from an io.Reader. The stream content is read
-// eagerly into memory.
+// eagerly into memory. Use NewFromStreamLazy when you need to upload a large
+// payload through a memory-constrained process — it keeps the tail of the
+// stream un-buffered.
 func NewFromStream(r io.Reader, hints ...MetadataHint) (*File, error) {
 	var hint MetadataHint
 	if len(hints) > 0 {
@@ -234,6 +251,64 @@ func NewFromStream(r io.Reader, hints ...MetadataHint) (*File, error) {
 		meta:   meta,
 		data:   data,
 		loaded: true,
+	}, nil
+}
+
+// NewFromStreamLazy creates a File from an io.Reader without buffering the
+// entire payload up-front. Only the first streamHeadBytes are read for
+// magic-byte detection; the remainder stays in the reader and is consumed
+// chunk-by-chunk by Read(), IterBytes(), or UploadToS3.
+//
+// This is the path that lets a 2 GB upload through a 256 MB Lambda — peak
+// memory stays bounded to one chunk during streaming uploads.
+//
+// Iterating a lazy stream consumes the tail. Subsequent calls to Read() or
+// IterBytes() will only see what's already cached.
+func NewFromStreamLazy(r io.Reader, hints ...MetadataHint) (*File, error) {
+	var hint MetadataHint
+	if len(hints) > 0 {
+		hint = hints[0]
+	}
+
+	// Pull the head buffer for magic-byte detection. io.ReadFull returns
+	// io.ErrUnexpectedEOF when the source is shorter than the buffer — that
+	// just means we have the whole payload already and can fall back to the
+	// eager path.
+	head := make([]byte, streamHeadBytes)
+	n, err := io.ReadFull(r, head)
+	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+		return nil, newError(ErrRead, "NewFromStreamLazy", err)
+	}
+	head = head[:n]
+	sourceExhausted := err == io.ErrUnexpectedEOF || err == io.EOF
+
+	if sourceExhausted {
+		// We have the complete payload; behave like the eager path so size
+		// etc. is exact.
+		meta := resolveMetadataFromBytes(head, hint)
+		return &File{
+			source: SourceStream,
+			meta:   meta,
+			data:   head,
+			loaded: true,
+		}, nil
+	}
+
+	// Lazy path: detection on the head, keep r as the tail.
+	meta := resolveMetadataFromBytes(head, hint)
+	// We only know a partial size. Zero it unless the caller hinted the true
+	// content-length.
+	if !hint.hasSize() {
+		meta.Size = 0
+	}
+
+	return &File{
+		source:     SourceStream,
+		meta:       meta,
+		lazy:       true,
+		streamHead: head,
+		streamTail: r,
+		loaded:     false,
 	}, nil
 }
 
@@ -347,12 +422,106 @@ func (f *File) SetMetadata(hint MetadataHint) {
 // --- Read Operations ---
 
 // Read returns the file contents as a byte slice. The data is cached after the
-// first call.
+// first call. For lazy streams this drains the remaining tail into memory and
+// caches it — subsequent calls return the cached buffer. Use IterBytes() to
+// avoid loading the whole payload into RAM.
 func (f *File) Read() ([]byte, error) {
 	if f.loaded && f.data != nil {
 		return f.data, nil
 	}
+	if f.lazy && f.streamHead != nil {
+		// Drain the tail into memory.
+		tail, err := io.ReadAll(f.streamTail)
+		if err != nil {
+			return nil, newError(ErrRead, "Read", err)
+		}
+		combined := make([]byte, 0, len(f.streamHead)+len(tail))
+		combined = append(combined, f.streamHead...)
+		combined = append(combined, tail...)
+		f.data = combined
+		f.loaded = true
+		f.streamHead = nil
+		f.streamTail = nil
+		f.lazy = false
+		f.meta.Size = int64(len(combined))
+		return f.data, nil
+	}
 	return nil, newError(ErrRead, "Read", fmt.Errorf("no data available"))
+}
+
+// IterBytes yields the file contents in chunks without buffering the full
+// payload. For lazy streams, the head is yielded first, then the tail is
+// drained chunk-by-chunk so peak memory stays bounded to a single chunk. For
+// non-lazy files, the cached buffer is yielded once.
+//
+// Iterating a lazy stream consumes the tail — subsequent IterBytes() or Read()
+// calls will see an exhausted stream. The channel is closed when the source
+// is drained or an error occurs.
+//
+// Errors are sent on the returned error channel after the byte channel is
+// closed. Always check the error channel after the byte channel returns.
+func (f *File) IterBytes(ctx context.Context) (<-chan []byte, <-chan error) {
+	out := make(chan []byte)
+	errc := make(chan error, 1)
+
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		if f.lazy && f.streamHead != nil {
+			head := f.streamHead
+			tail := f.streamTail
+			f.streamHead = nil
+			f.streamTail = nil
+			f.lazy = false
+			total := int64(len(head))
+
+			select {
+			case out <- head:
+			case <-ctx.Done():
+				errc <- ctx.Err()
+				return
+			}
+
+			if tail != nil {
+				buf := make([]byte, 64*1024)
+				for {
+					n, err := tail.Read(buf)
+					if n > 0 {
+						chunk := make([]byte, n)
+						copy(chunk, buf[:n])
+						total += int64(n)
+						select {
+						case out <- chunk:
+						case <-ctx.Done():
+							errc <- ctx.Err()
+							return
+						}
+					}
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						errc <- newError(ErrRead, "IterBytes", err)
+						return
+					}
+				}
+			}
+			f.meta.Size = total
+			return
+		}
+
+		if f.loaded && f.data != nil {
+			select {
+			case out <- f.data:
+			case <-ctx.Done():
+				errc <- ctx.Err()
+				return
+			}
+		}
+	}()
+
+	return out, errc
 }
 
 // ReadText returns the file contents as a UTF-8 string.
@@ -667,29 +836,78 @@ func (f *File) UploadToS3(bucket, key string) error {
 }
 
 // UploadToS3WithContext uploads the file to S3 using the given context.
+//
+// For lazy streams, the head + tail are spooled through a temp file so the
+// upload can stream from disk rather than buffering the full payload in RAM.
+// PutObject requires a seekable body for retries; a temp-file spool keeps
+// peak memory bounded to one chunk + the buffer Go uses for io.Copy.
 func (f *File) UploadToS3WithContext(ctx context.Context, bucket, key string) error {
-	data, err := f.Read()
-	if err != nil {
-		return err
-	}
-
 	s3Client, _ := S3ClientFactory()
 
 	input := &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(key),
-		Body:        bytes.NewReader(data),
 		ContentType: nilIfEmpty(f.meta.MimeType),
-	}
-	if f.meta.Size > 0 {
-		input.ContentLength = aws.Int64(f.meta.Size)
 	}
 	if f.meta.Name != "" {
 		input.ContentDisposition = aws.String(fmt.Sprintf(`attachment; filename="%s"`, f.meta.Name))
 	}
 
-	_, err = s3Client.PutObject(ctx, input)
+	// Lazy streaming path: spool head + tail through a temp file so PutObject
+	// can stream from a seekable source without RAM-buffering the payload.
+	if f.lazy && f.streamHead != nil {
+		spool, err := os.CreateTemp("", "smooai-file-upload-*")
+		if err != nil {
+			return newError(ErrWrite, "UploadToS3", err)
+		}
+		spoolPath := spool.Name()
+		defer func() {
+			_ = spool.Close()
+			_ = os.Remove(spoolPath)
+		}()
+
+		if _, err := spool.Write(f.streamHead); err != nil {
+			return newError(ErrWrite, "UploadToS3", err)
+		}
+		written, err := io.Copy(spool, f.streamTail)
+		if err != nil {
+			return newError(ErrRead, "UploadToS3", err)
+		}
+		f.streamHead = nil
+		f.streamTail = nil
+		f.lazy = false
+		total := int64(len(f.streamHead)) + written
+		_ = total // size recorded below
+		size, err := spool.Seek(0, io.SeekEnd)
+		if err != nil {
+			return newError(ErrRead, "UploadToS3", err)
+		}
+		if _, err := spool.Seek(0, io.SeekStart); err != nil {
+			return newError(ErrRead, "UploadToS3", err)
+		}
+		f.meta.Size = size
+
+		input.Body = spool
+		input.ContentLength = aws.Int64(size)
+
+		if _, err := s3Client.PutObject(ctx, input); err != nil {
+			return newError(ErrS3, "UploadToS3", err)
+		}
+		return nil
+	}
+
+	// Eager path: bytes already in memory.
+	data, err := f.Read()
 	if err != nil {
+		return err
+	}
+
+	input.Body = bytes.NewReader(data)
+	if f.meta.Size > 0 {
+		input.ContentLength = aws.Int64(f.meta.Size)
+	}
+
+	if _, err := s3Client.PutObject(ctx, input); err != nil {
 		return newError(ErrS3, "UploadToS3", err)
 	}
 	return nil

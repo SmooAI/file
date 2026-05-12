@@ -116,6 +116,10 @@ public static class S3SmooFile
     /// <summary>
     /// Upload a <see cref="SmooFile"/> to S3. The detected MIME type and name
     /// are attached as <c>Content-Type</c> and <c>Content-Disposition</c>.
+    ///
+    /// For lazy streams, the upload streams via <see cref="Amazon.S3.Transfer.TransferUtility"/>
+    /// (multipart) so a 2 GB payload doesn't have to fit in RAM. For eager
+    /// files it falls back to a single PutObject from the cached byte buffer.
     /// </summary>
     public static async Task UploadToS3Async(this SmooFile file, IAmazonS3 s3, string bucket, string key, CancellationToken ct = default)
     {
@@ -123,6 +127,27 @@ public static class S3SmooFile
         ArgumentNullException.ThrowIfNull(s3);
         ArgumentException.ThrowIfNullOrEmpty(bucket);
         ArgumentException.ThrowIfNullOrEmpty(key);
+
+        if (file.IsLazy)
+        {
+            // Streaming path: hand the head + tail to TransferUtility which
+            // streams chunks via S3 multipart upload, so peak memory stays
+            // bounded to one part.
+            var transfer = new Amazon.S3.Transfer.TransferUtility(s3);
+            await using var view = file.OpenReadStream();
+            var req = new Amazon.S3.Transfer.TransferUtilityUploadRequest
+            {
+                BucketName = bucket,
+                Key = key,
+                InputStream = view,
+                ContentType = file.MimeType,
+                AutoCloseStream = false,
+            };
+            if (!string.IsNullOrEmpty(file.Name))
+                req.Headers.ContentDisposition = $"attachment; filename=\"{file.Name}\"";
+            await transfer.UploadAsync(req, ct).ConfigureAwait(false);
+            return;
+        }
 
         var bytes = await file.ReadBytesAsync(ct).ConfigureAwait(false);
         using var stream = new MemoryStream(bytes);

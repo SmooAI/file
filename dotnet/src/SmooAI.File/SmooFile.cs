@@ -80,6 +80,21 @@ public sealed class SmooFile
 {
     private byte[] _bytes;
 
+    // ---- Lazy streaming state -----------------------------------------------
+    // When _lazy is true, _bytes contains only the magic-byte-detection head
+    // buffer (~64 KB). The tail of the source is still in _lazyTail and is
+    // drained chunk-by-chunk by ReadBytesAsync(), OpenReadStream(), or the
+    // S3 upload helper — so a 2 GB upload doesn't have to fit in RAM.
+    private bool _lazy;
+    private Stream? _lazyTail;
+
+    /// <summary>
+    /// Head buffer read up-front when constructing a lazy stream. 64 KB is
+    /// enough for every MIME detector we support; the rest of the source stays
+    /// un-buffered until the consumer asks for it.
+    /// </summary>
+    internal const int LazyHeadBytes = 64 * 1024;
+
     /// <summary>Where this file was originally loaded from.</summary>
     public FileSource Source { get; }
 
@@ -107,62 +122,149 @@ public sealed class SmooFile
         Detected = detected;
     }
 
-    /// <summary>
-    /// Read raw bytes. Returned array is a defensive copy.
-    /// </summary>
-    public Task<byte[]> ReadBytesAsync(CancellationToken ct = default)
+    private SmooFile(FileSource source, byte[] head, Stream tail, FileMetadata metadata, MimeDetectionResult detected)
     {
+        Source = source;
+        _bytes = head;
+        _lazy = true;
+        _lazyTail = tail;
+        Metadata = metadata;
+        Detected = detected;
+    }
+
+    /// <summary>
+    /// Whether this file is in lazy-streaming mode. When true, the tail of the
+    /// source stream is still un-buffered and will be drained on the next
+    /// <see cref="ReadBytesAsync"/>, <see cref="OpenReadStream"/>, or upload
+    /// call. Mostly useful for tests; consumers shouldn't need to branch on it.
+    /// </summary>
+    public bool IsLazy => _lazy;
+
+    /// <summary>
+    /// Read raw bytes. Returned array is a defensive copy. For lazy streams
+    /// this drains the remaining tail into memory and caches it — subsequent
+    /// calls return the cached buffer. Use <see cref="OpenReadStream"/> when
+    /// you don't want the full payload in RAM at once.
+    /// </summary>
+    public async Task<byte[]> ReadBytesAsync(CancellationToken ct = default)
+    {
+        await DrainLazyTailAsync(ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
         var copy = new byte[_bytes.Length];
         Buffer.BlockCopy(_bytes, 0, copy, 0, _bytes.Length);
-        return Task.FromResult(copy);
+        return copy;
+    }
+
+    /// <summary>
+    /// Open a forward-only stream that yields the file contents chunk-by-chunk
+    /// without buffering the whole payload. For lazy streams this returns a
+    /// concatenated view of the head buffer + the remaining tail, so peak
+    /// memory stays bounded to a single chunk during a copy.
+    ///
+    /// Reading from the returned stream consumes the lazy tail. After the
+    /// stream is fully read, subsequent <see cref="ReadBytesAsync"/> or
+    /// <see cref="OpenReadStream"/> calls will see an exhausted source.
+    /// </summary>
+    public Stream OpenReadStream()
+    {
+        if (_lazy && _lazyTail is not null)
+        {
+            // Hand off the head + tail to a single read-once stream. Mark this
+            // SmooFile as no-longer-lazy and clear our tail reference so a
+            // second OpenReadStream/ReadBytesAsync call sees the cached head
+            // (now empty after the stream drains) rather than re-yielding it.
+            var head = _bytes;
+            var tail = _lazyTail;
+            _bytes = Array.Empty<byte>();
+            _lazyTail = null;
+            _lazy = false;
+            return new HeadAndTailStream(head, tail, sizeUpdate: size =>
+            {
+                Metadata.Size = size;
+            });
+        }
+        return new MemoryStream(_bytes, writable: false);
+    }
+
+    /// <summary>
+    /// Drain a lazy stream's tail into _bytes. Idempotent for non-lazy files.
+    /// </summary>
+    private async Task DrainLazyTailAsync(CancellationToken ct)
+    {
+        if (!_lazy || _lazyTail is null) return;
+
+        using var ms = new MemoryStream();
+        ms.Write(_bytes, 0, _bytes.Length);
+        await _lazyTail.CopyToAsync(ms, ct).ConfigureAwait(false);
+        _bytes = ms.ToArray();
+        _lazyTail.Dispose();
+        _lazyTail = null;
+        _lazy = false;
+        Metadata.Size = _bytes.LongLength;
     }
 
     /// <summary>
     /// Read the content as a UTF-8 string.
     /// </summary>
-    public Task<string> ReadStringAsync(CancellationToken ct = default)
+    public async Task<string> ReadStringAsync(CancellationToken ct = default)
     {
+        await DrainLazyTailAsync(ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult(System.Text.Encoding.UTF8.GetString(_bytes));
+        return System.Text.Encoding.UTF8.GetString(_bytes);
     }
 
     /// <summary>
     /// Base64-encode the content. Useful for email attachments, data URLs, and
     /// APIs that require inline-encoded file bytes.
     /// </summary>
-    public Task<string> ToBase64Async(CancellationToken ct = default)
+    public async Task<string> ToBase64Async(CancellationToken ct = default)
     {
+        await DrainLazyTailAsync(ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult(Convert.ToBase64String(_bytes));
+        return Convert.ToBase64String(_bytes);
     }
 
     /// <summary>
     /// Copy the file contents to a destination stream. Useful for serving
-    /// responses or staging uploads.
+    /// responses or staging uploads. For lazy streams this streams head + tail
+    /// through the destination so peak memory stays bounded.
     /// </summary>
     public async Task CopyToAsync(Stream destination, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(destination);
+        if (_lazy && _lazyTail is not null)
+        {
+            await using var view = OpenReadStream();
+            await view.CopyToAsync(destination, ct).ConfigureAwait(false);
+            return;
+        }
         await destination.WriteAsync(_bytes.AsMemory(), ct).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Compute the SHA-256 hex digest of the file contents.
     /// </summary>
-    public Task<string> GetChecksumAsync(CancellationToken ct = default)
+    public async Task<string> GetChecksumAsync(CancellationToken ct = default)
     {
+        await DrainLazyTailAsync(ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
         var hash = SHA256.HashData(_bytes);
-        return Task.FromResult(Convert.ToHexString(hash).ToLowerInvariant());
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
     /// <summary>
-    /// Save the file to a path on disk.
+    /// Save the file to a path on disk. For lazy streams this streams the
+    /// content directly to disk without buffering it in memory.
     /// </summary>
     public async Task SaveToFileAsync(string destinationPath, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(destinationPath);
+        if (_lazy && _lazyTail is not null)
+        {
+            await using var dest = System.IO.File.Create(destinationPath);
+            await CopyToAsync(dest, ct).ConfigureAwait(false);
+            return;
+        }
         await System.IO.File.WriteAllBytesAsync(destinationPath, _bytes, ct).ConfigureAwait(false);
     }
 
@@ -248,21 +350,41 @@ public sealed class SmooFile
     }
 
     /// <summary>
-    /// Create a <see cref="SmooFile"/> from a stream. The entire stream is
-    /// buffered into memory so the content can be revalidated, hashed, copied,
-    /// and encoded without re-reading from the source.
+    /// Create a <see cref="SmooFile"/> from a stream. By default the entire
+    /// stream is buffered into memory so the content can be revalidated,
+    /// hashed, copied, and encoded without re-reading from the source.
+    ///
+    /// Pass <paramref name="lazy"/> = <c>true</c> to keep the tail un-buffered
+    /// — only the first ~64 KB is read up-front for magic-byte detection, and
+    /// the rest stays in the source stream until consumed by
+    /// <see cref="ReadBytesAsync"/>, <see cref="OpenReadStream"/>, or
+    /// <c>S3SmooFile.UploadToS3Async</c>. This is the path that lets a 2 GB
+    /// upload through a memory-constrained process.
     /// </summary>
-    public static async Task<SmooFile> CreateFromStreamAsync(Stream stream, Action<SmooFileOptions>? configure = null, CancellationToken ct = default)
+    public static async Task<SmooFile> CreateFromStreamAsync(Stream stream, Action<SmooFileOptions>? configure = null, CancellationToken ct = default, bool lazy = false)
     {
         ArgumentNullException.ThrowIfNull(stream);
         var options = new SmooFileOptions();
         configure?.Invoke(options);
+
+        if (lazy)
+        {
+            return await BuildLazyFromStreamAsync(FileSource.Stream, stream, options, ct).ConfigureAwait(false);
+        }
 
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms, ct).ConfigureAwait(false);
         var bytes = ms.ToArray();
         return BuildFromBytes(FileSource.Stream, bytes, options);
     }
+
+    /// <summary>
+    /// Convenience overload that mirrors Python's <c>from_stream(lazy=True)</c>.
+    /// Behaviour is identical to <see cref="CreateFromStreamAsync"/> with
+    /// <c>lazy: true</c>.
+    /// </summary>
+    public static Task<SmooFile> CreateFromStreamLazyAsync(Stream stream, Action<SmooFileOptions>? configure = null, CancellationToken ct = default)
+        => CreateFromStreamAsync(stream, configure, ct, lazy: true);
 
     /// <summary>
     /// Create a <see cref="SmooFile"/> from a local path.
@@ -363,6 +485,42 @@ public sealed class SmooFile
         return new SmooFile(source, bytes, metadata, detected);
     }
 
+    /// <summary>
+    /// Build a lazy SmooFile from a stream. Reads up to <see cref="LazyHeadBytes"/>
+    /// for magic-byte detection, keeps the rest of the stream un-buffered. If
+    /// the source is shorter than the head buffer, falls back to the eager
+    /// path so size/cached-buffer semantics match a non-lazy construction.
+    /// </summary>
+    internal static async Task<SmooFile> BuildLazyFromStreamAsync(FileSource source, Stream stream, SmooFileOptions options, CancellationToken ct)
+    {
+        // Read up to LazyHeadBytes into the head buffer.
+        var head = new byte[LazyHeadBytes];
+        int total = 0;
+        while (total < head.Length)
+        {
+            int read = await stream.ReadAsync(head.AsMemory(total, head.Length - total), ct).ConfigureAwait(false);
+            if (read == 0) break;
+            total += read;
+        }
+
+        if (total < head.Length)
+        {
+            // Source exhausted during head-read — promote to eager path.
+            Array.Resize(ref head, total);
+            return BuildFromBytes(source, head, options);
+        }
+
+        // Lazy path: head holds first LazyHeadBytes, stream holds the rest.
+        var detected = MimeDetector.Detect(head);
+        var metadata = options.ToMetadataHint();
+        // Size is unknown until the tail is drained — leave whatever the caller
+        // hinted, or null. Magic-byte detection still wins for MIME/extension.
+        metadata.MimeType = detected.MimeType ?? metadata.MimeType ?? ExtensionMimeMap.MimeFromName(metadata.Name);
+        metadata.Extension = detected.Extension ?? metadata.Extension ?? ExtractExtension(metadata.Name) ?? ExtensionMimeMap.ExtensionFromMime(metadata.MimeType);
+
+        return new SmooFile(source, head, stream, metadata, detected);
+    }
+
     private static string? ExtractExtension(string? name)
     {
         if (string.IsNullOrEmpty(name)) return null;
@@ -391,4 +549,86 @@ public sealed class SmooFile
 internal static class SharedHttpClient
 {
     public static readonly HttpClient Instance = new();
+}
+
+/// <summary>
+/// A read-only forward-only Stream that first yields a head buffer, then
+/// transparently transitions to reading from a tail Stream. Used by
+/// <see cref="SmooFile.OpenReadStream"/> so consumers see one logical stream
+/// even though the file's bytes live in two places (the detection head + the
+/// un-buffered source).
+/// </summary>
+internal sealed class HeadAndTailStream : Stream
+{
+    private readonly byte[] _head;
+    private int _headPos;
+    private Stream? _tail;
+    private long _totalRead;
+    private readonly Action<long>? _onClose;
+
+    public HeadAndTailStream(byte[] head, Stream tail, Action<long>? sizeUpdate = null)
+    {
+        _head = head;
+        _tail = tail;
+        _onClose = sizeUpdate;
+    }
+
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => throw new NotSupportedException();
+    public override long Position
+    {
+        get => _totalRead;
+        set => throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        if (_headPos < _head.Length)
+        {
+            int n = Math.Min(count, _head.Length - _headPos);
+            Buffer.BlockCopy(_head, _headPos, buffer, offset, n);
+            _headPos += n;
+            _totalRead += n;
+            return n;
+        }
+        if (_tail is null) return 0;
+        int read = _tail.Read(buffer, offset, count);
+        _totalRead += read;
+        return read;
+    }
+
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+    {
+        if (_headPos < _head.Length)
+        {
+            int n = Math.Min(buffer.Length, _head.Length - _headPos);
+            _head.AsMemory(_headPos, n).CopyTo(buffer);
+            _headPos += n;
+            _totalRead += n;
+            return n;
+        }
+        if (_tail is null) return 0;
+        int read = await _tail.ReadAsync(buffer, ct).ConfigureAwait(false);
+        _totalRead += read;
+        return read;
+    }
+
+    public override void Flush() { }
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _onClose?.Invoke(_totalRead);
+            _tail?.Dispose();
+            _tail = null;
+        }
+        base.Dispose(disposing);
+    }
 }
