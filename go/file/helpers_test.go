@@ -1,10 +1,14 @@
 package file
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
 	"strings"
 	"testing"
 	"time"
@@ -285,6 +289,66 @@ func TestFileValidationError_ErrorMessages(t *testing.T) {
 				t.Errorf("Error() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// --- ToFormData ---
+
+func TestToFormData_RoundTripsViaMultipartReader(t *testing.T) {
+	f, err := NewFromBytes(pngBytes, MetadataHint{Name: "pic.png"})
+	if err != nil {
+		t.Fatalf("NewFromBytes: %v", err)
+	}
+	form, err := f.ToFormData("upload")
+	if err != nil {
+		t.Fatalf("ToFormData: %v", err)
+	}
+	if !strings.HasPrefix(form.ContentType, "multipart/form-data; boundary=") {
+		t.Errorf("unexpected ContentType: %q", form.ContentType)
+	}
+
+	// Parse the multipart body using the stdlib parser as our stub.
+	_, params, err := mime.ParseMediaType(form.ContentType)
+	if err != nil {
+		t.Fatalf("ParseMediaType: %v", err)
+	}
+	mr := multipart.NewReader(form.Body, params["boundary"])
+	part, err := mr.NextPart()
+	if err != nil {
+		t.Fatalf("NextPart: %v", err)
+	}
+	if part.FormName() != "upload" {
+		t.Errorf("form name = %q, want %q", part.FormName(), "upload")
+	}
+	if part.FileName() != "pic.png" {
+		t.Errorf("filename = %q, want %q", part.FileName(), "pic.png")
+	}
+	body, err := io.ReadAll(part)
+	if err != nil {
+		t.Fatalf("read part: %v", err)
+	}
+	if !bytes.Equal(body, pngBytes) {
+		t.Error("multipart body does not round-trip the source bytes")
+	}
+}
+
+func TestToFormData_EmptyAttrName_DefaultsToFile(t *testing.T) {
+	f, err := NewFromBytes([]byte("hello"))
+	if err != nil {
+		t.Fatalf("NewFromBytes: %v", err)
+	}
+	form, err := f.ToFormData("")
+	if err != nil {
+		t.Fatalf("ToFormData: %v", err)
+	}
+	_, params, _ := mime.ParseMediaType(form.ContentType)
+	mr := multipart.NewReader(form.Body, params["boundary"])
+	part, err := mr.NextPart()
+	if err != nil {
+		t.Fatalf("NextPart: %v", err)
+	}
+	if part.FormName() != "file" {
+		t.Errorf("form name = %q, want %q", part.FormName(), "file")
 	}
 }
 

@@ -628,6 +628,31 @@ class File:
         data = await self.read()
         return base64.b64encode(data).decode("ascii")
 
+    async def to_form_data(self, attr_name: str = "file") -> dict[str, tuple[str, bytes, str]]:
+        """Build an httpx-compatible multipart payload for this file.
+
+        Returns a dict that can be passed directly to ``httpx.post(url, files=...)``
+        and equivalent ``files=`` kwargs in ``requests``. The structure mirrors
+        ``File.toFormData(attrName)`` from the TS port — single field named
+        ``attr_name`` carrying the filename, bytes, and content-type.
+
+        Args:
+            attr_name: The form field name. Defaults to ``"file"`` to match the
+                TS API.
+
+        Returns:
+            A ``{attr_name: (filename, content_bytes, content_type)}`` dict
+            ready for ``files=`` on an HTTP client.
+
+        Examples:
+            >>> form = await file.to_form_data("upload")
+            >>> httpx.post("https://example.com/upload", files=form)
+        """
+        data = await self.read()
+        filename = self._metadata.name or ""
+        content_type = self._metadata.mime_type or "application/octet-stream"
+        return {attr_name: (filename, data, content_type)}
+
     # ------------------------------------------------------------------
     # Validation
     # ------------------------------------------------------------------

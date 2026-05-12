@@ -959,6 +959,22 @@ impl File {
         Ok(BASE64_STANDARD.encode(&self.data))
     }
 
+    /// Convert the file into a `reqwest::multipart::Form` ready to be sent
+    /// with `RequestBuilder::multipart`. The TS port exposes the same helper
+    /// for relay/proxy scenarios. The form contains a single field named
+    /// `attr_name` carrying the file bytes, filename, and content-type.
+    pub fn to_form_data(&self, attr_name: &str) -> Result<reqwest::multipart::Form> {
+        let bytes: Vec<u8> = self.data.to_vec();
+        let mut part = reqwest::multipart::Part::bytes(bytes)
+            .file_name(self.metadata.name.clone().unwrap_or_default());
+        if let Some(mime) = &self.metadata.mime_type {
+            part = part
+                .mime_str(mime)
+                .map_err(|e| FileError::InvalidSource(format!("invalid mime type {mime}: {e}")))?;
+        }
+        Ok(reqwest::multipart::Form::new().part(attr_name.to_string(), part))
+    }
+
     // -----------------------------------------------------------------------
     // Metadata mutation
     // -----------------------------------------------------------------------
@@ -1336,6 +1352,54 @@ mod tests {
     async fn test_to_base64_empty() {
         let file = File::from_bytes(Bytes::new(), None).await.unwrap();
         assert_eq!(file.to_base64().await.unwrap(), "");
+    }
+
+    #[tokio::test]
+    async fn test_to_form_data_builds_multipart_form() {
+        // Build a File with a known filename + mime, then verify the form is
+        // assembled (we exercise the construction path; reqwest's multipart
+        // module owns the wire-format assertions).
+        let hint = MetadataHint {
+            name: Some("greet.txt".into()),
+            mime_type: Some("text/plain".into()),
+            ..Default::default()
+        };
+        let file = File::from_bytes(Bytes::from_static(b"hello"), Some(hint))
+            .await
+            .unwrap();
+        let form = file.to_form_data("file").unwrap();
+        // boundary() is a stable, non-empty string for any well-formed Form.
+        assert!(!form.boundary().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_to_form_data_custom_attr_name() {
+        let hint = MetadataHint {
+            name: Some("a.bin".into()),
+            ..Default::default()
+        };
+        let file = File::from_bytes(Bytes::from_static(b"x"), Some(hint))
+            .await
+            .unwrap();
+        let form = file.to_form_data("document").unwrap();
+        assert!(!form.boundary().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_to_form_data_no_mime_does_not_fail() {
+        // Files with no detected mime should still produce a usable form.
+        let file = File::from_bytes(Bytes::from_static(b"xx"), None)
+            .await
+            .unwrap();
+        // Strip the auto-detected mime to exercise the None branch.
+        let mut file = file;
+        file.set_metadata(MetadataHint {
+            mime_type: Some(String::new()),
+            ..Default::default()
+        });
+        file.metadata.mime_type = None;
+        let form = file.to_form_data("file").unwrap();
+        assert!(!form.boundary().is_empty());
     }
 
     #[tokio::test]
