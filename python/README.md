@@ -268,7 +268,7 @@ asyncio.run(main())
 - [aiofiles](https://github.com/Tinche/aiofiles) — async filesystem I/O
 - [httpx](https://www.python-httpx.org/) — async HTTP client for URL downloads
 - [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) — AWS SDK for S3 integration
-- [python-magic](https://github.com/ahupp/python-magic) — magic-byte MIME detection
+- [puremagic](https://github.com/cdgriffith/puremagic) — pure-Python magic-byte MIME detection (no libmagic system dep)
 
 ## Related Packages
 
