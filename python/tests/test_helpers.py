@@ -160,6 +160,54 @@ class TestToBase64:
 
 
 # ---------------------------------------------------------------------------
+# File.to_form_data
+# ---------------------------------------------------------------------------
+
+
+class TestToFormData:
+    async def test_returns_httpx_compatible_payload(self) -> None:
+        f = await File.from_bytes(b"hello", metadata_hint={"name": "greet.txt", "mime_type": "text/plain"})
+        form = await f.to_form_data()
+        assert "file" in form
+        filename, body, content_type = form["file"]
+        assert filename == "greet.txt"
+        assert body == b"hello"
+        assert content_type == "text/plain"
+
+    async def test_custom_attr_name(self) -> None:
+        f = await File.from_bytes(b"x", metadata_hint={"name": "a.bin"})
+        form = await f.to_form_data("document")
+        assert "document" in form
+        assert "file" not in form
+
+    async def test_round_trip_via_email_parser(self, png_bytes: bytes) -> None:
+        # Stub multipart parse — build a body from the form payload and parse it back.
+        import email
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.application import MIMEApplication
+
+        f = await File.from_bytes(png_bytes, metadata_hint={"name": "pic.png"})
+        form = await f.to_form_data("upload")
+        filename, body, content_type = form["upload"]
+
+        msg = MIMEMultipart("form-data")
+        part = MIMEApplication(body, _subtype="octet-stream")
+        part.add_header("Content-Disposition", "form-data", name="upload", filename=filename)
+        part.set_type(content_type)
+        msg.attach(part)
+
+        # Serialize and re-parse to confirm the structure is well-formed.
+        raw = msg.as_bytes()
+        parsed = email.message_from_bytes(raw)
+        parts = list(parsed.walk())
+        # First part is the container, second is our attachment.
+        assert len(parts) >= 2
+        # The attachment payload round-trips.
+        attached = parts[1].get_payload(decode=True)
+        assert attached == png_bytes
+
+
+# ---------------------------------------------------------------------------
 # File.create_presigned_upload_url
 # ---------------------------------------------------------------------------
 

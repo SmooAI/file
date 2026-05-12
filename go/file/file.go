@@ -10,7 +10,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"os"
 	"path"
@@ -383,6 +385,57 @@ func (f *File) ToBase64() (string, error) {
 		return "", err
 	}
 	return base64.StdEncoding.EncodeToString(data), nil
+}
+
+// --- FormData ---
+
+// FormData is a serialized multipart/form-data payload ready to be sent in an
+// HTTP request. Body holds the encoded bytes and ContentType holds the
+// matching “multipart/form-data; boundary=...“ header value.
+type FormData struct {
+	Body        *bytes.Buffer
+	ContentType string
+}
+
+// ToFormData builds a single-part “multipart/form-data“ payload containing
+// this file, mirroring TS's “File.toFormData(attrName)“. Callers pass
+// “FormData.Body“ as the request body and “FormData.ContentType“ as the
+// “Content-Type“ header.
+//
+// If attrName is empty, "file" is used to match the TS default.
+func (f *File) ToFormData(attrName string) (*FormData, error) {
+	if attrName == "" {
+		attrName = "file"
+	}
+
+	data, err := f.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	buf := &bytes.Buffer{}
+	writer := multipart.NewWriter(buf)
+
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, attrName, f.meta.Name))
+	contentType := f.meta.MimeType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	header.Set("Content-Type", contentType)
+
+	part, err := writer.CreatePart(header)
+	if err != nil {
+		return nil, newError(ErrWrite, "ToFormData", err)
+	}
+	if _, err := part.Write(data); err != nil {
+		return nil, newError(ErrWrite, "ToFormData", err)
+	}
+	if err := writer.Close(); err != nil {
+		return nil, newError(ErrWrite, "ToFormData", err)
+	}
+
+	return &FormData{Body: buf, ContentType: writer.FormDataContentType()}, nil
 }
 
 // --- Validation ---

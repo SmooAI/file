@@ -167,6 +167,29 @@ public sealed class SmooFile
     }
 
     /// <summary>
+    /// Build a <see cref="MultipartFormDataContent"/> ready to send via
+    /// <see cref="HttpClient"/>. The TS port exposes the same helper for
+    /// relay/proxy scenarios. The form contains a single field named
+    /// <paramref name="attrName"/> carrying the file bytes, filename, and
+    /// content-type.
+    /// </summary>
+    /// <param name="attrName">Form field name. Defaults to <c>"file"</c> to match the TS API.</param>
+    public MultipartFormDataContent ToFormData(string attrName = "file")
+    {
+        if (string.IsNullOrEmpty(attrName)) attrName = "file";
+        var form = new MultipartFormDataContent();
+        var content = new ByteArrayContent(_bytes);
+        var mime = MimeType ?? "application/octet-stream";
+        content.Headers.ContentType = new MediaTypeHeaderValue(mime);
+        // MultipartFormDataContent.Add(..., name, fileName) rejects null/empty
+        // filenames; fall back to the field name so missing-Name files still
+        // round-trip as a valid multipart payload.
+        var fileName = string.IsNullOrWhiteSpace(Name) ? attrName : Name!;
+        form.Add(content, attrName, fileName);
+        return form;
+    }
+
+    /// <summary>
     /// Validate size, MIME allowlist, and (optionally) that the claimed content
     /// type agrees with the magic-byte-detected type. Throws a typed
     /// <see cref="FileValidationException"/> on failure so callers (e.g. HTTP
