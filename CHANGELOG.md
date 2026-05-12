@@ -1,5 +1,25 @@
 # @smooai/file
 
+## 2.2.9
+
+### Patch Changes
+
+- b9293e6: SMOODEV-951: Bring Python, Rust, Go, and .NET to parity with TS's `createFromWebFile` (overdue v2.1.0 follow-up). Each port adds an idiomatic factory for ingesting a form/multipart upload from a web framework:
+    - Python: `File.from_form_upload(upload)` — accepts any object exposing `filename` + `content_type` + `read()` (Starlette `UploadFile`, FastAPI `UploadFile`, aiohttp `FileField`)
+    - Rust: `File::from_form_upload(bytes, filename, content_type)` — framework-agnostic; callers pull these fields from axum/actix Multipart fields
+    - Go: `NewFromMultipartFile(*multipart.FileHeader)` — stdlib `net/http` multipart type
+    - .NET: `SmooFile.CreateFromFormFileAsync(Stream, fileName, contentType)` — callers pass `IFormFile.OpenReadStream(), FileName, ContentType` to avoid forcing the ASP.NET dep on every consumer
+
+- e529eef: SMOODEV-952: Python — true lazy streaming for `File.from_stream`. The README pitch is "2 GB upload doesn't blow your Lambda memory," and now Python actually keeps that promise.
+
+    `File.from_stream(stream, lazy=True)` (default) buffers only the first 64 KB up-front for magic-byte detection; the remaining tail stays in the source generator and is drained chunk-by-chunk by `read()`, the new `iter_bytes()` async generator, or `upload_to_s3()` (which routes the tail through a `SpooledTemporaryFile` and `boto3.upload_fileobj`'s multipart streaming so peak memory stays bounded). Pass `lazy=False` to opt back into the legacy fully-buffered behavior.
+
+    100 MB synthetic-stream test caps peak process RSS delta at 50 MB during consumption — used to blow past 100 MB.
+
+    Follow-up tickets needed for Rust, Go, and .NET ports.
+
+- 3499ab2: SMOODEV-955: Add `toFormData` / `ToFormData` / `to_form_data` to Python, Rust, Go, and .NET ports. Brings them to parity with the TS API for relay/proxy scenarios where the file needs to be re-uploaded as a multipart form field. Each port returns a payload native to its idiomatic HTTP client (httpx `files=` dict in Python, `reqwest::multipart::Form` in Rust, `*FormData` struct with multipart body+content-type in Go, `MultipartFormDataContent` in .NET).
+
 ## 2.2.8
 
 ### Patch Changes
