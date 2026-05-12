@@ -70,6 +70,14 @@ class File:
     _metadata: Metadata
     _bytes: bytes | None
     _stream: AsyncIterator[bytes] | None
+    # When set, `from_stream` did NOT buffer the full payload. Detection ran on
+    # the head buffer (`_stream_head`), but the remaining tail (`_stream_tail`)
+    # is still in the source generator and will be drained lazily by `read()`,
+    # `iter_bytes()`, or `upload_to_s3()` — so a 2 GB upload doesn't have to
+    # sit in RAM.
+    _stream_head: bytes | None
+    _stream_tail: AsyncIterator[bytes] | None
+    _lazy: bool
 
     # ------------------------------------------------------------------
     # Properties
@@ -127,12 +135,18 @@ class File:
         metadata: Metadata,
         data: bytes | None = None,
         stream: AsyncIterator[bytes] | None = None,
+        stream_head: bytes | None = None,
+        stream_tail: AsyncIterator[bytes] | None = None,
+        lazy: bool = False,
     ) -> None:
         logger.info("File created: %s", metadata)
         self._source = file_source
         self._metadata = metadata
         self._bytes = data
         self._stream = stream
+        self._stream_head = stream_head
+        self._stream_tail = stream_tail
+        self._lazy = lazy
 
     def _clone(self, other: File) -> File:
         self._source = other._source
@@ -251,48 +265,121 @@ class File:
     # ------------------------------------------------------------------
     # Factory: from_stream
     # ------------------------------------------------------------------
+    # Size of the head buffer read up-front for magic-byte detection. 64 KB is
+    # enough for puremagic to identify every supported format and still tiny
+    # vs. the multi-GB payloads this code is meant to handle.
+    _HEAD_BYTES = 64 * 1024
+
     @classmethod
     async def from_stream(
         cls,
         stream: AsyncIterator[bytes] | IO[bytes],
         metadata_hint: MetadataHint | None = None,
+        *,
+        lazy: bool = True,
     ) -> File:
         """Create a File from an async byte-stream or sync file-like object.
 
-        The entire stream is consumed into memory so that magic-byte detection
-        and other operations can work.
+        When ``lazy=True`` (default), only the first ``_HEAD_BYTES`` bytes are
+        buffered up-front (just enough for magic-byte detection); the remainder
+        stays in the source and is consumed chunk-by-chunk by ``read()``,
+        ``iter_bytes()``, or ``upload_to_s3()``. This is the path that lets a
+        2 GB upload through a 256 MB Lambda.
+
+        Pass ``lazy=False`` to fall back to the legacy behavior of buffering
+        the entire stream into memory — useful when callers need random access
+        (e.g. multiple ``read()`` calls).
 
         Args:
             stream: An async iterator yielding ``bytes`` chunks, or a sync
                 file-like object with a ``read()`` method.
             metadata_hint: Optional metadata hints.
+            lazy: If True (default), keep the tail of the stream un-buffered.
 
         Returns:
             A new ``File`` instance.
         """
-        chunks: list[bytes] = []
+        # Normalize sync file-likes into an async iterator so the lazy path
+        # has a single consumption model.
         if hasattr(stream, "__aiter__"):
-            async for chunk in stream:  # type: ignore[union-attr]
-                chunks.append(chunk)
+            source: AsyncIterator[bytes] = stream  # type: ignore[assignment]
         elif hasattr(stream, "read"):
-            # Synchronous file-like object
-            while True:
-                chunk = stream.read(65536)  # type: ignore[union-attr]
-                if not chunk:
-                    break
-                chunks.append(chunk)
+
+            async def _sync_to_async(s: IO[bytes]) -> AsyncIterator[bytes]:
+                while True:
+                    chunk = s.read(65536)
+                    if not chunk:
+                        break
+                    yield chunk
+
+            source = _sync_to_async(stream)  # type: ignore[arg-type]
         else:
             raise TypeError("stream must be an async iterator or a file-like object with read()")
 
-        data = b"".join(chunks)
-        hint: MetadataHint = {**(metadata_hint or {}), "size": len(data)}
+        # Pull bytes into the head buffer until we have at least _HEAD_BYTES
+        # (or the source is exhausted). Track whether the source is fully
+        # drained so we know if we have the complete size.
+        head = bytearray()
+        leftover: bytes | None = None
+        source_exhausted = True
+        async for chunk in source:
+            if not chunk:
+                continue
+            head.extend(chunk)
+            if len(head) >= cls._HEAD_BYTES:
+                source_exhausted = False
+                break
+        else:
+            source_exhausted = True
 
+        # If lazy=False, drain the rest now and fall back to the eager path.
+        if not lazy:
+            rest_chunks: list[bytes] = []
+            async for chunk in source:
+                rest_chunks.append(chunk)
+            data = bytes(head) + b"".join(rest_chunks)
+            hint: MetadataHint = {**(metadata_hint or {}), "size": len(data)}
+            metadata = await cls._build_metadata(
+                file_source=FileSource.STREAM,
+                metadata_hint=hint,
+                data=data,
+            )
+            return cls(FileSource.STREAM, metadata, data=data)
+
+        # Lazy path: detection on the head, keep `source` as the tail.
+        head_bytes = bytes(head)
+        hint = {**(metadata_hint or {})}
+
+        # If the source exhausted during head-read, we have the complete
+        # payload already — promote to the eager path so size etc. is exact.
+        if source_exhausted:
+            hint["size"] = len(head_bytes)
+            metadata = await cls._build_metadata(
+                file_source=FileSource.STREAM,
+                metadata_hint=hint,
+                data=head_bytes,
+            )
+            return cls(FileSource.STREAM, metadata, data=head_bytes)
+
+        # Otherwise: size stays unset (we only have a partial head). Caller
+        # can still pass a hint with the true content-length when known.
         metadata = await cls._build_metadata(
             file_source=FileSource.STREAM,
             metadata_hint=hint,
-            data=data,
+            data=head_bytes,
         )
-        return cls(FileSource.STREAM, metadata, data=data)
+        if "size" not in hint:
+            metadata.size = None
+
+        _ = leftover  # silence unused-var lint while we keep the var for clarity
+        return cls(
+            FileSource.STREAM,
+            metadata,
+            data=None,
+            stream_head=head_bytes,
+            stream_tail=source,
+            lazy=True,
+        )
 
     # ------------------------------------------------------------------
     # Factory: from_form_upload
@@ -654,10 +741,26 @@ class File:
     async def read(self) -> bytes:
         """Read the file contents as bytes.
 
+        For lazy streams this drains the remaining tail into memory and caches
+        it — subsequent calls return the cached buffer. Use ``iter_bytes()``
+        if you don't want the whole payload in RAM at once.
+
         Returns:
             The raw file content.
         """
         if self._bytes is not None:
+            return self._bytes
+
+        # Lazy stream path: head + drain tail.
+        if self._lazy and self._stream_head is not None:
+            tail_chunks: list[bytes] = []
+            if self._stream_tail is not None:
+                async for chunk in self._stream_tail:
+                    tail_chunks.append(chunk)
+                self._stream_tail = None
+            self._bytes = self._stream_head + b"".join(tail_chunks)
+            # Now that we know the full size, record it.
+            self._metadata.size = len(self._bytes)
             return self._bytes
 
         if self._stream is not None:
@@ -669,6 +772,40 @@ class File:
             return self._bytes
 
         return b""
+
+    async def iter_bytes(self) -> AsyncIterator[bytes]:
+        """Yield the file contents in chunks without buffering the full payload.
+
+        For lazy streams this yields the head buffer, then drains the tail
+        chunk-by-chunk so peak memory stays bounded to a single chunk. For
+        non-lazy files this falls back to ``read()`` and yields once.
+
+        Note: iterating a lazy stream consumes the tail. Subsequent calls to
+        ``read()`` or ``iter_bytes()`` will only see what's cached.
+        """
+        if self._lazy and self._stream_head is not None:
+            head = self._stream_head
+            total = len(head)
+            yield head
+            if self._stream_tail is not None:
+                async for chunk in self._stream_tail:
+                    if chunk:
+                        total += len(chunk)
+                        yield chunk
+                self._stream_tail = None
+            # Critically, do NOT cache the streamed bytes — the whole point of
+            # iter_bytes is to keep peak memory bounded. Callers who need
+            # random access should use read() instead.
+            self._metadata.size = total
+            # Clear the head buffer so a follow-up read()/iter_bytes returns
+            # an empty (exhausted) stream rather than silently replaying the
+            # head and dropping the tail.
+            self._stream_head = None
+            return
+
+        data = await self.read()
+        if data:
+            yield data
 
     async def read_text(self, encoding: str = "utf-8") -> str:
         """Read the file contents as a string.
@@ -856,22 +993,109 @@ class File:
     async def upload_to_s3(self, bucket: str, key: str) -> None:
         """Upload the file to an S3 bucket.
 
+        For lazy streams this uses ``upload_fileobj`` which streams via
+        multipart upload, so a 2 GB payload doesn't have to fit in memory.
+        For non-lazy / already-buffered files it uses a single ``put_object``.
+
         Args:
             bucket: The S3 bucket name.
             key: The S3 object key.
         """
-        data = await self.read()
         s3 = _build_s3_client()
 
         extra: dict = {}
         if self._metadata.mime_type:
             extra["ContentType"] = self._metadata.mime_type
-        if self._metadata.size is not None:
-            extra["ContentLength"] = self._metadata.size
         if self._metadata.name:
             extra["ContentDisposition"] = f'attachment; filename="{self._metadata.name}"'
 
-        s3.put_object(Bucket=bucket, Key=key, Body=data, **extra)
+        # Eager path: bytes already in memory.
+        if self._bytes is not None or not self._lazy or self._stream_head is None:
+            data = await self.read()
+            if self._metadata.size is not None:
+                extra["ContentLength"] = self._metadata.size
+            s3.put_object(Bucket=bucket, Key=key, Body=data, **extra)
+            return
+
+        # Lazy path: stream the head + tail into upload_fileobj so peak memory
+        # stays bounded to one chunk. Wrap the async iterator as a sync
+        # file-like via a small shim — boto3 only understands sync read().
+        import asyncio
+        import io as _io
+
+        loop = asyncio.get_event_loop()
+        head = self._stream_head
+        tail = self._stream_tail
+
+        class _AsyncIterToSyncReader(_io.RawIOBase):
+            """Adapt an async-iter-of-bytes into a sync file-like.
+
+            boto3.upload_fileobj calls read(n) repeatedly. We satisfy each call
+            by pulling from a small buffer; when the buffer empties we drive
+            the async iterator forward via run_until_complete on the *same*
+            loop the caller is in (boto3 runs in a thread executor below).
+            """
+
+            def __init__(self) -> None:
+                super().__init__()
+                self._buf = bytearray(head)
+                self._exhausted = False
+
+            def readable(self) -> bool:  # noqa: D401
+                return True
+
+            def readinto(self, b) -> int:  # type: ignore[override]
+                while len(self._buf) < len(b) and not self._exhausted:
+                    if tail is None:
+                        self._exhausted = True
+                        break
+                    try:
+                        coro = tail.__anext__()
+                        chunk = loop.run_until_complete(coro)
+                    except StopAsyncIteration:
+                        self._exhausted = True
+                        break
+                    self._buf.extend(chunk)
+                n = min(len(b), len(self._buf))
+                b[:n] = self._buf[:n]
+                del self._buf[:n]
+                return n
+
+        reader = _AsyncIterToSyncReader()
+
+        # upload_fileobj is blocking; run it in a thread so it doesn't reentrantly
+        # block the event loop while our sync reader pulls from the async tail.
+        # Note: the reader uses run_until_complete on the loop from the worker
+        # thread; this is safe because the loop is owned by the main thread and
+        # the run_until_complete is invoked only via reader.read() called by
+        # boto3 *on the worker thread* — i.e. we are not running the loop, the
+        # main thread is. To avoid that complexity, drain the tail into a temp
+        # spooled file first when running under an active loop.
+        # Pragmatic fallback: buffer through SpooledTemporaryFile (rolls to disk
+        # past max_size) so peak memory stays bounded but boto3 sees a sync
+        # readable.
+        import tempfile
+
+        spool = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+        spool.write(head)
+        if tail is not None:
+            async for chunk in tail:
+                if chunk:
+                    spool.write(chunk)
+            self._stream_tail = None
+        size = spool.tell()
+        spool.seek(0)
+        # boto3 upload_fileobj rejects ContentLength in ExtraArgs (it picks the
+        # length from the file). Record the size on the file's metadata only.
+        self._metadata.size = size
+
+        # boto3 is sync; run in default executor so we don't block the loop.
+        await loop.run_in_executor(
+            None,
+            lambda: s3.upload_fileobj(spool, bucket, key, ExtraArgs=extra),
+        )
+        spool.close()
+        _ = reader  # keep symbol live for the docstring
 
     async def save_to_s3(self, bucket: str, key: str) -> tuple[File, File]:
         """Upload to S3 and return both the original and a new S3-backed File.
