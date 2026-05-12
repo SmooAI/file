@@ -5,7 +5,6 @@
         "outDir": "./dist",
         "types": ["node"],
         "target": "ES2022",
-        "baseUrl": "./",
         "sourceMap": true,
         "inlineSources": true
     },
