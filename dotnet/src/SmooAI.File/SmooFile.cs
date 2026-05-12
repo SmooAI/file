@@ -284,6 +284,37 @@ public sealed class SmooFile
     }
 
     /// <summary>
+    /// Create a <see cref="SmooFile"/> from an ASP.NET Core <c>IFormFile</c>-style
+    /// upload. Rather than referencing <c>Microsoft.AspNetCore.Http</c> directly
+    /// (which would force the dep on every consumer), this overload takes the
+    /// three fields <c>IFormFile</c> exposes — call site looks like:
+    /// <code>
+    /// await SmooFile.CreateFromFormFileAsync(formFile.OpenReadStream(), formFile.FileName, formFile.ContentType);
+    /// </code>
+    /// Mirrors TS's <c>createFromWebFile</c>.
+    /// </summary>
+    public static async Task<SmooFile> CreateFromFormFileAsync(
+        Stream stream,
+        string? fileName = null,
+        string? contentType = null,
+        Action<SmooFileOptions>? configure = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        var options = new SmooFileOptions
+        {
+            Name = string.IsNullOrEmpty(fileName) ? null : fileName,
+            MimeType = string.IsNullOrEmpty(contentType) ? null : contentType,
+        };
+        configure?.Invoke(options);
+
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms, ct).ConfigureAwait(false);
+        var bytes = ms.ToArray();
+        return BuildFromBytes(FileSource.Stream, bytes, options);
+    }
+
+    /// <summary>
     /// Download a URL and create a <see cref="SmooFile"/> from the response body.
     /// Optionally pass an <see cref="HttpClient"/>; otherwise a shared one is used.
     /// </summary>

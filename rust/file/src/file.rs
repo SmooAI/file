@@ -959,6 +959,36 @@ impl File {
         Ok(BASE64_STANDARD.encode(&self.data))
     }
 
+    /// Create a `File` from a web framework's form-upload field (axum's
+    /// `Multipart::Field`, actix's `Field`, etc). Rather than binding to one
+    /// framework, callers pass the three fields every framework exposes —
+    /// bytes, filename, content-type — and we wire them through the standard
+    /// `from_bytes` factory so detection and validation still run. Mirrors TS's
+    /// `createFromWebFile`.
+    ///
+    /// # Example
+    /// ```ignore
+    /// // axum
+    /// while let Some(field) = multipart.next_field().await? {
+    ///     let name = field.file_name().map(|s| s.to_string());
+    ///     let ct = field.content_type().map(|s| s.to_string());
+    ///     let bytes = field.bytes().await?;
+    ///     let file = File::from_form_upload(bytes, name, ct).await?;
+    /// }
+    /// ```
+    pub async fn from_form_upload(
+        bytes: Bytes,
+        filename: Option<String>,
+        content_type: Option<String>,
+    ) -> Result<Self> {
+        let hint = MetadataHint {
+            name: filename,
+            mime_type: content_type,
+            ..Default::default()
+        };
+        File::from_bytes(bytes, Some(hint)).await
+    }
+
     /// Convert the file into a `reqwest::multipart::Form` ready to be sent
     /// with `RequestBuilder::multipart`. The TS port exposes the same helper
     /// for relay/proxy scenarios. The form contains a single field named
@@ -1352,6 +1382,29 @@ mod tests {
     async fn test_to_base64_empty() {
         let file = File::from_bytes(Bytes::new(), None).await.unwrap();
         assert_eq!(file.to_base64().await.unwrap(), "");
+    }
+
+    #[tokio::test]
+    async fn test_from_form_upload_preserves_hints() {
+        let file = File::from_form_upload(
+            Bytes::from_static(b"hello"),
+            Some("greet.txt".into()),
+            Some("text/plain".into()),
+        )
+        .await
+        .unwrap();
+        assert_eq!(file.name(), Some("greet.txt"));
+        // Magic-byte detection may override mime — but the size and name hints
+        // must persist.
+        assert_eq!(file.size(), Some(5));
+    }
+
+    #[tokio::test]
+    async fn test_from_form_upload_no_hints() {
+        let file = File::from_form_upload(Bytes::from_static(b"xx"), None, None)
+            .await
+            .unwrap();
+        assert!(file.name().is_none());
     }
 
     #[tokio::test]
