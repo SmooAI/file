@@ -237,8 +237,8 @@ class TestToFormData:
     async def test_round_trip_via_email_parser(self, png_bytes: bytes) -> None:
         # Stub multipart parse — build a body from the form payload and parse it back.
         import email
-        from email.mime.multipart import MIMEMultipart
         from email.mime.application import MIMEApplication
+        from email.mime.multipart import MIMEMultipart
 
         f = await File.from_bytes(png_bytes, metadata_hint={"name": "pic.png"})
         form = await f.to_form_data("upload")
