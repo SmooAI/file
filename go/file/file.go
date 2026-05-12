@@ -503,6 +503,12 @@ type PresignedUploadOptions struct {
 	// client cannot PUT a larger object. Not all HTTP clients actually send
 	// Content-Length, so servers should still validate on a subsequent HEAD.
 	MaxSize int64
+
+	// ContentDisposition, if non-empty, is baked into the signature so the
+	// stored object will be served with this Content-Disposition header. Use
+	// this to pre-set the suggested filename for downloads, e.g.
+	// `attachment; filename="user-photo.png"`.
+	ContentDisposition string
 }
 
 // CreatePresignedUploadURL generates a presigned S3 PUT URL so a client can
@@ -528,9 +534,10 @@ func CreatePresignedUploadURL(ctx context.Context, bucket, key string, opts *Pre
 	_, presignClient := S3ClientFactory()
 
 	input := &s3.PutObjectInput{
-		Bucket:      aws.String(bucket),
-		Key:         aws.String(key),
-		ContentType: nilIfEmpty(o.ContentType),
+		Bucket:             aws.String(bucket),
+		Key:                aws.String(key),
+		ContentType:        nilIfEmpty(o.ContentType),
+		ContentDisposition: nilIfEmpty(o.ContentDisposition),
 	}
 	if o.MaxSize > 0 {
 		input.ContentLength = aws.Int64(o.MaxSize)

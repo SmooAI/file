@@ -407,6 +407,50 @@ func TestCreatePresignedUploadURL_ValidatesArgs(t *testing.T) {
 	}
 }
 
+func TestCreatePresignedUploadURL_ContentDisposition(t *testing.T) {
+	var capturedCD *string
+
+	presign := &mockPresignClient{
+		presignPutObjectFn: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error) {
+			capturedCD = params.ContentDisposition
+			return &v4.PresignedHTTPRequest{URL: "https://signed.example/", Method: "PUT"}, nil
+		},
+	}
+	cleanup := setMockS3(&mockS3Client{}, presign)
+	defer cleanup()
+
+	_, err := CreatePresignedUploadURL(context.Background(), "bucket", "uploads/file.bin", &PresignedUploadOptions{
+		ContentDisposition: `attachment; filename="user-photo.png"`,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedCD == nil || *capturedCD != `attachment; filename="user-photo.png"` {
+		t.Errorf("ContentDisposition = %v, want attachment; filename=\"user-photo.png\"", capturedCD)
+	}
+}
+
+func TestCreatePresignedUploadURL_EmptyContentDisposition_NotSet(t *testing.T) {
+	var capturedCD *string
+
+	presign := &mockPresignClient{
+		presignPutObjectFn: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error) {
+			capturedCD = params.ContentDisposition
+			return &v4.PresignedHTTPRequest{URL: "https://signed.example/", Method: "PUT"}, nil
+		},
+	}
+	cleanup := setMockS3(&mockS3Client{}, presign)
+	defer cleanup()
+
+	_, err := CreatePresignedUploadURL(context.Background(), "bucket", "key", &PresignedUploadOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedCD != nil {
+		t.Errorf("ContentDisposition should be nil when empty, got %q", *capturedCD)
+	}
+}
+
 func TestCreatePresignedUploadURL_SigningError(t *testing.T) {
 	presign := &mockPresignClient{
 		presignPutObjectFn: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error) {
