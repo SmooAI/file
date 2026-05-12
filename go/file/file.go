@@ -160,6 +160,60 @@ func NewFromFile(filePath string, hints ...MetadataHint) (*File, error) {
 	}, nil
 }
 
+// NewFromMultipartFile creates a File from a stdlib `*multipart.FileHeader`,
+// the type carried in `http.Request.MultipartForm.File`. The TS port exposes
+// `createFromWebFile` for the same scenario; this is the Go-native equivalent
+// for multipart upload routes.
+//
+// Filename and Content-Type from the part headers are preserved as metadata
+// hints unless overridden by `hints`.
+func NewFromMultipartFile(fh *multipart.FileHeader, hints ...MetadataHint) (*File, error) {
+	if fh == nil {
+		return nil, newError(ErrInvalidSource, "NewFromMultipartFile", fmt.Errorf("file header is nil"))
+	}
+
+	src, err := fh.Open()
+	if err != nil {
+		return nil, newError(ErrRead, "NewFromMultipartFile", err)
+	}
+	defer src.Close()
+
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return nil, newError(ErrRead, "NewFromMultipartFile", err)
+	}
+
+	// Build hint: start from the multipart headers, layer caller overrides on top.
+	hint := MetadataHint{
+		Name:     fh.Filename,
+		MimeType: fh.Header.Get("Content-Type"),
+	}
+	if len(hints) > 0 {
+		override := hints[0]
+		if override.Name != "" {
+			hint.Name = override.Name
+		}
+		if override.MimeType != "" {
+			hint.MimeType = override.MimeType
+		}
+		if override.Size != 0 {
+			hint.Size = override.Size
+		}
+		if override.Extension != "" {
+			hint.Extension = override.Extension
+		}
+	}
+
+	meta := resolveMetadataFromBytes(data, hint)
+
+	return &File{
+		source: SourceStream,
+		meta:   meta,
+		data:   data,
+		loaded: true,
+	}, nil
+}
+
 // NewFromStream creates a File from an io.Reader. The stream content is read
 // eagerly into memory.
 func NewFromStream(r io.Reader, hints ...MetadataHint) (*File, error) {

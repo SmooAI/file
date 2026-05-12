@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"mime/multipart"
+	"net/textproto"
 	"strings"
 	"testing"
 	"time"
@@ -289,6 +290,82 @@ func TestFileValidationError_ErrorMessages(t *testing.T) {
 				t.Errorf("Error() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// --- NewFromMultipartFile ---
+
+func TestNewFromMultipartFile_ExtractsFilenameAndContentType(t *testing.T) {
+	// Build a real multipart body and parse it back to get a *FileHeader,
+	// then feed it to NewFromMultipartFile.
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Disposition", `form-data; name="upload"; filename="pic.png"`)
+	header.Set("Content-Type", "image/png")
+	part, err := writer.CreatePart(header)
+	if err != nil {
+		t.Fatalf("CreatePart: %v", err)
+	}
+	if _, err := part.Write(pngBytes); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	writer.Close()
+
+	reader := multipart.NewReader(body, writer.Boundary())
+	form, err := reader.ReadForm(1 << 20)
+	if err != nil {
+		t.Fatalf("ReadForm: %v", err)
+	}
+	defer form.RemoveAll()
+
+	fh := form.File["upload"][0]
+	f, err := NewFromMultipartFile(fh)
+	if err != nil {
+		t.Fatalf("NewFromMultipartFile: %v", err)
+	}
+	if f.Name() != "pic.png" {
+		t.Errorf("Name = %q, want pic.png", f.Name())
+	}
+	if f.MimeType() == "" {
+		t.Error("MimeType should not be empty")
+	}
+	read, _ := f.Read()
+	if !bytes.Equal(read, pngBytes) {
+		t.Error("file bytes do not round-trip")
+	}
+}
+
+func TestNewFromMultipartFile_NilFails(t *testing.T) {
+	_, err := NewFromMultipartFile(nil)
+	if err == nil {
+		t.Fatal("expected error for nil FileHeader")
+	}
+	if !errors.Is(err, ErrInvalidSource) {
+		t.Errorf("expected ErrInvalidSource, got %v", err)
+	}
+}
+
+func TestNewFromMultipartFile_HintsOverrideMultipartMetadata(t *testing.T) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Disposition", `form-data; name="upload"; filename="original.bin"`)
+	header.Set("Content-Type", "application/octet-stream")
+	part, _ := writer.CreatePart(header)
+	part.Write([]byte("payload"))
+	writer.Close()
+
+	reader := multipart.NewReader(body, writer.Boundary())
+	form, _ := reader.ReadForm(1 << 20)
+	defer form.RemoveAll()
+
+	f, err := NewFromMultipartFile(form.File["upload"][0], MetadataHint{Name: "renamed.bin"})
+	if err != nil {
+		t.Fatalf("NewFromMultipartFile: %v", err)
+	}
+	if f.Name() != "renamed.bin" {
+		t.Errorf("Name = %q, want renamed.bin", f.Name())
 	}
 }
 

@@ -295,6 +295,76 @@ class File:
         return cls(FileSource.STREAM, metadata, data=data)
 
     # ------------------------------------------------------------------
+    # Factory: from_form_upload
+    # ------------------------------------------------------------------
+    @classmethod
+    async def from_form_upload(
+        cls,
+        upload: object,
+        metadata_hint: MetadataHint | None = None,
+    ) -> File:
+        """Create a File from an ASGI / web framework form-upload object.
+
+        Mirrors the TS port's ``File.createFromWebFile`` for relay/proxy and
+        multipart-route scenarios. Accepts any object that quacks like
+        Starlette's ``UploadFile`` or aiohttp's ``FileField``:
+
+        - ``filename`` (str | None)
+        - ``content_type`` (str | None)
+        - ``file`` (sync file-like, has ``read``) **or** ``read()`` directly
+          (async or sync), returned bytes.
+
+        Caller-supplied ``metadata_hint`` overrides hints from the upload.
+
+        Args:
+            upload: A web framework form-upload object (Starlette ``UploadFile``,
+                aiohttp ``FileField``, FastAPI ``UploadFile``, etc.).
+            metadata_hint: Optional metadata hints that override the upload's
+                own hints.
+
+        Returns:
+            A new ``File`` instance.
+
+        Examples:
+            In a FastAPI route::
+
+                @app.post("/upload")
+                async def upload(file: UploadFile):
+                    smoo = await File.from_form_upload(file)
+                    await smoo.validate(max_size=5_000_000)
+        """
+        # Drain the upload into bytes. Try async read() first (Starlette,
+        # FastAPI), then sync .file.read() (aiohttp FileField), then sync
+        # read() as a last resort.
+        data: bytes
+        read = getattr(upload, "read", None)
+        if callable(read):
+            result = read()
+            if hasattr(result, "__await__"):
+                data = await result  # type: ignore[assignment, misc]
+            else:
+                data = result  # type: ignore[assignment]
+        else:
+            file_attr = getattr(upload, "file", None)
+            if file_attr is not None and hasattr(file_attr, "read"):
+                data = file_attr.read()
+            else:
+                raise TypeError("upload must expose a read() method (async or sync) or a .file attribute with read()")
+
+        filename = getattr(upload, "filename", None) or None
+        content_type = getattr(upload, "content_type", None) or None
+
+        hint: MetadataHint = {}
+        if filename:
+            hint["name"] = filename
+        if content_type:
+            hint["mime_type"] = content_type
+        if metadata_hint:
+            hint.update(metadata_hint)
+
+        return await cls.from_bytes(data, metadata_hint=hint)
+
+    # ------------------------------------------------------------------
     # Factory: from_s3
     # ------------------------------------------------------------------
     @classmethod

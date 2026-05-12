@@ -160,6 +160,60 @@ class TestToBase64:
 
 
 # ---------------------------------------------------------------------------
+# File.from_form_upload
+# ---------------------------------------------------------------------------
+
+
+class TestFromFormUpload:
+    async def test_starlette_style_async_read(self) -> None:
+        # Stub UploadFile: async read(), filename, content_type attrs.
+        class _Upload:
+            filename = "report.pdf"
+            content_type = "application/pdf"
+
+            async def read(self) -> bytes:
+                return b"%PDF-1.4 stub"
+
+        f = await File.from_form_upload(_Upload())
+        assert f.name == "report.pdf"
+        # Content-type hint preserved as a fallback when magic-byte detection
+        # doesn't run on this short stub.
+        assert f.mime_type in ("application/pdf", None) or f.mime_type.startswith("application/")
+        assert await f.read() == b"%PDF-1.4 stub"
+
+    async def test_aiohttp_style_sync_file_attr(self) -> None:
+        # Stub FileField: sync .file attr + filename + content_type.
+        import io
+
+        class _FileField:
+            filename = "photo.jpg"
+            content_type = "image/jpeg"
+            file = io.BytesIO(b"\xff\xd8\xff\xe0bytes")
+
+        f = await File.from_form_upload(_FileField())
+        assert f.name == "photo.jpg"
+        assert await f.read() == b"\xff\xd8\xff\xe0bytes"
+
+    async def test_metadata_hint_overrides_upload(self) -> None:
+        class _Upload:
+            filename = "original.bin"
+            content_type = "application/octet-stream"
+
+            async def read(self) -> bytes:
+                return b"data"
+
+        f = await File.from_form_upload(_Upload(), metadata_hint={"name": "renamed.bin"})
+        assert f.name == "renamed.bin"
+
+    async def test_rejects_uploads_without_read(self) -> None:
+        class _Bad:
+            filename = "no-read.txt"
+
+        with pytest.raises(TypeError):
+            await File.from_form_upload(_Bad())
+
+
+# ---------------------------------------------------------------------------
 # File.to_form_data
 # ---------------------------------------------------------------------------
 
