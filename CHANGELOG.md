@@ -1,5 +1,11 @@
 # @smooai/file
 
+## 2.2.12
+
+### Patch Changes
+
+- 3d28f59: Drop create-entry-points dependency from build — freeze entry list in tsdown.config.ts + package.json exports. No public API change.
+
 ## 2.2.11
 
 ### Patch Changes
