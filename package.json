@@ -50,7 +50,7 @@
     },
     "scripts": {
         "aibranch": "pnpm generate-git-branch",
-        "build": "pnpm create-entry-points -i \"src/**/*.ts\" && pnpm tsdown && pnpm run python:build && pnpm run rust:build && pnpm run go:build",
+        "build": "pnpm tsdown && pnpm run python:build && pnpm run rust:build && pnpm run go:build",
         "check-all": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run python:typecheck && pnpm run python:lint && pnpm run python:format:check && pnpm run rust:fmt:check && pnpm run rust:lint && pnpm run rust:test && pnpm run go:fmt:check && pnpm run go:lint && pnpm run go:test && pnpm run build",
         "ci:publish": "pnpm build && pnpm changeset publish && pnpm run version:sync",
         "format": "oxfmt --write . && pnpm run python:format && pnpm run rust:fmt && pnpm run go:fmt",
@@ -90,7 +90,6 @@
         "@file-type/xml": "^0.4.1",
         "@smooai/fetch": "^3.3.5",
         "@smooai/logger": "^4.1.4",
-        "@smooai/utils": "^1.3.4",
         "content-disposition": "^0.5.4",
         "file-type": "^20.4.1",
         "formdata-node": "^6.0.3",
