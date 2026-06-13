@@ -1,20 +1,17 @@
 <a name="readme-top"></a>
 
 <p align="center">
-  <a href="https://smoo.ai"><img src="https://smoo.ai/images/logo/logo.svg" alt="Smoo AI" width="220" /></a>
-</p>
-
-<h1 align="center">@smooai/file</h1>
-
-<p align="center">
-  <strong>File operations that don't lie — magic-byte MIME detection, built-in validation, and one-call presigned S3 uploads, all stream-first.</strong>
+  <a href="https://smoo.ai"><img src=".github/banner.png" alt="@smooai/file — Trust the bytes, not the extension" width="100%" /></a>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@smooai/file"><img src="https://img.shields.io/npm/v/@smooai/file?style=flat-square&color=00A6A6&label=npm" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@smooai/file"><img src="https://img.shields.io/npm/v/@smooai/file?style=for-the-badge&color=00A6A6&label=npm&logo=npm&logoColor=white&labelColor=020618" alt="npm"></a>
+  <a href="https://smoo.ai"><img src="https://img.shields.io/badge/Smoo_AI-platform-00A6A6?style=for-the-badge&labelColor=020618" alt="Smoo AI"></a>
+  <img src="https://img.shields.io/badge/license-MIT-F49F0A?style=for-the-badge&labelColor=020618" alt="license">
+</p>
+
+<p align="center">
   <a href="https://www.npmjs.com/package/@smooai/file"><img src="https://img.shields.io/npm/dw/@smooai/file?style=flat-square&color=F49F0A&label=downloads" alt="downloads"></a>
-  <img src="https://img.shields.io/badge/Smoo_AI-platform-00A6A6?style=flat-square" alt="Smoo AI">
-  <img src="https://img.shields.io/badge/license-MIT-F49F0A?style=flat-square" alt="license">
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white" alt="Rust">
@@ -23,10 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="#features">Features</a> ·
-  <a href="#install">Install</a> ·
-  <a href="#usage">Usage</a> ·
-  <a href="#part-of-smoo-ai">Platform</a>
+  <a href="#-features"><b>Features</b></a> &nbsp;·&nbsp; <a href="#-install"><b>Install</b></a> &nbsp;·&nbsp; <a href="#-usage"><b>Usage</b></a> &nbsp;·&nbsp; <a href="#-part-of-smoo-ai"><b>Platform</b></a>
 </p>
 
 ---
@@ -301,14 +295,10 @@ const url = await File.createPresignedUploadUrl({
 
 ## 🧩 Part of Smoo AI <a name="part-of-smoo-ai"></a>
 
-@smooai/file is part of the [Smoo AI](https://smoo.ai) platform — an AI-powered business platform with AI built into every product. It's one of a small family of open-source packages we maintain to keep our own stack honest. Use them in your stack, or take them as a reference for how we build.
+`@smooai/file` is built and open-sourced by **[Smoo AI](https://smoo.ai)** — the AI-powered business platform with AI built into every product: CRM, customer support, campaigns, field service, observability, and developer tools.
 
-- [@smooai/fetch](https://github.com/SmooAI/fetch) — typed HTTP with retries and structured errors
-- [@smooai/logger](https://github.com/SmooAI/logger) — contextual structured logging
-- [@smooai/config](https://github.com/SmooAI/config) — typed config, secrets, and feature flags
-- [smooth](https://github.com/SmooAI/smooth) — the agent orchestration toolkit
-
-Browse everything at [smoo.ai/open-source](https://smoo.ai/open-source) and [github.com/SmooAI](https://github.com/SmooAI).
+- 🧰 **More open source from Smoo AI** — [smoo.ai/open-source](https://smoo.ai/open-source)
+- 🧩 **Sibling packages** — [@smooai/fetch](https://github.com/SmooAI/fetch), [@smooai/logger](https://github.com/SmooAI/logger), [@smooai/config](https://github.com/SmooAI/config), [smooth](https://github.com/SmooAI/smooth)
 
 ## 🤝 Contributing <a name="contributing"></a>
 
