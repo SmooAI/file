@@ -1,80 +1,39 @@
-<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
-
 <a name="readme-top"></a>
 
-<!--
-*** Thanks for checking out the Best-README-Template. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Don't forget to give the project a star!
-*** Thanks again! Now go create something AMAZING! :D
--->
+<p align="center">
+  <a href="https://smoo.ai"><img src="https://smoo.ai/images/logo/logo.svg" alt="Smoo AI" width="220" /></a>
+</p>
 
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
+<h1 align="center">@smooai/file</h1>
 
-<!-- PROJECT LOGO -->
-<br />
-<div align="center">
-  <a href="https://smoo.ai">
-    <img src="images/logo.png" alt="SmooAI Logo" />
-  </a>
-</div>
+<p align="center">
+  <strong>File operations that don't lie — magic-byte MIME detection, built-in validation, and one-call presigned S3 uploads, all stream-first.</strong>
+</p>
 
-<!-- ABOUT THE PROJECT -->
+<p align="center">
+  <a href="https://www.npmjs.com/package/@smooai/file"><img src="https://img.shields.io/npm/v/@smooai/file?style=flat-square&color=00A6A6&label=npm" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@smooai/file"><img src="https://img.shields.io/npm/dw/@smooai/file?style=flat-square&color=F49F0A&label=downloads" alt="downloads"></a>
+  <img src="https://img.shields.io/badge/Smoo_AI-platform-00A6A6?style=flat-square" alt="Smoo AI">
+  <img src="https://img.shields.io/badge/license-MIT-F49F0A?style=flat-square" alt="license">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white" alt="Rust">
+  <img src="https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go">
+  <img src="https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET">
+</p>
 
-## About Smoo AI
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#part-of-smoo-ai">Platform</a>
+</p>
 
-**[Smoo AI](https://smoo.ai)** is an AI platform that helps businesses multiply their customer, employee, and developer experience — conversational AI for support and sales, paired with the production-grade developer tooling we use to build it.
+---
 
-This library is part of a small family of open-source packages we maintain to keep our own stack honest: contextual logging, typed HTTP, file storage, and agent orchestration. Use them in your stack, or take them as a reference for how we build.
+> A file abstraction that trusts the bytes, not the extension. Built for backends that take uploads from the open internet: magic-byte MIME detection, size and content validation, and presigned S3 uploads — all stream-first, so a 2 GB upload never buffers into your Lambda memory.
 
-- 🌐 [smoo.ai](https://smoo.ai) — the product
-- 📦 [smoo.ai/open-source](https://smoo.ai/open-source) — every open-source package we ship
-- 🐙 [github.com/SmooAI](https://github.com/SmooAI) — the source
-
-## About @smooai/file
-
-**File operations that don't lie** — magic-byte MIME detection catches spoofed extensions, size + content validation is built in, and presigned S3 uploads are one call away. Stream-first so a 2 GB upload doesn't blow your Lambda memory.
-
-![NPM Version](https://img.shields.io/npm/v/%40smooai%2Ffile?style=for-the-badge)
-![NPM Downloads](https://img.shields.io/npm/dw/%40smooai%2Ffile?style=for-the-badge)
-![NPM Last Update](https://img.shields.io/npm/last-update/%40smooai%2Ffile?style=for-the-badge)
-
-![GitHub License](https://img.shields.io/github/license/SmooAI/file?style=for-the-badge)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/SmooAI/file/release.yml?style=for-the-badge)
-![GitHub Repo stars](https://img.shields.io/github/stars/SmooAI/file?style=for-the-badge)
-
-### Install
-
-```sh
-pnpm add @smooai/file
-```
-
-### Multi-Language Support
-
-@smooai/file is available as native implementations in **TypeScript**, **Python**, **Rust**, **Go**, and **.NET (C#)** — each built with idiomatic patterns for its ecosystem.
-
-| Language    | Package                                                           | Install                                 |
-| ----------- | ----------------------------------------------------------------- | --------------------------------------- |
-| TypeScript  | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file)      | `pnpm add @smooai/file`                 |
-| Python      | [`smooai-file`](https://pypi.org/project/smooai-file/)            | `pip install smooai-file`               |
-| Rust        | [`smooai-file`](https://crates.io/crates/smooai-file)             | `cargo add smooai-file`                 |
-| Go          | `github.com/SmooAI/file/go/file`                                  | `go get github.com/SmooAI/file/go/file` |
-| .NET (core) | [`SmooAI.File`](https://www.nuget.org/packages/SmooAI.File)       | `dotnet add package SmooAI.File`        |
-| .NET (S3)   | [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) | `dotnet add package SmooAI.File.S3`     |
-
-Language-specific source code lives in the [`python/`](./python/), [`rust/`](./rust/), [`go/`](./go/), and [`dotnet/`](./dotnet/) directories.
-
-The .NET port uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for magic-byte MIME sniffing and splits S3 helpers into a sub-package so consumers who don't need AWS avoid pulling in the AWS SDK.
-
-### What you get
+## ✨ Features <a name="features"></a>
 
 #### 🔒 Trust the bytes, not the extension
 
@@ -103,19 +62,44 @@ Bytes load lazily so a 2 GB upload doesn't buffer into memory. Automatic handlin
 
 File name, real (detected) MIME type, size, created/modified timestamps, hash/checksum, source type — all on one object.
 
-### Examples
+## 📦 Install <a name="install"></a>
 
-- [Basic Usage](#basic-usage)
-- [Streaming Operations](#streaming-operations)
-- [S3 Integration](#s3-integration)
-- [File Type Detection](#file-type-detection)
-- [FormData Support](#formdata-support)
+```sh
+pnpm add @smooai/file
+```
+
+### Multi-language support
+
+@smooai/file ships as native implementations in **TypeScript**, **Python**, **Rust**, **Go**, and **.NET (C#)** — each built with idiomatic patterns for its ecosystem.
+
+| Language    | Package                                                           | Install                                 |
+| ----------- | ----------------------------------------------------------------- | --------------------------------------- |
+| TypeScript  | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file)      | `pnpm add @smooai/file`                 |
+| Python      | [`smooai-file`](https://pypi.org/project/smooai-file/)            | `pip install smooai-file`               |
+| Rust        | [`smooai-file`](https://crates.io/crates/smooai-file)             | `cargo add smooai-file`                 |
+| Go          | `github.com/SmooAI/file/go/file`                                  | `go get github.com/SmooAI/file/go/file` |
+| .NET (core) | [`SmooAI.File`](https://www.nuget.org/packages/SmooAI.File)       | `dotnet add package SmooAI.File`        |
+| .NET (S3)   | [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) | `dotnet add package SmooAI.File.S3`     |
+
+Language-specific source lives in the [`python/`](./python/), [`rust/`](./rust/), [`go/`](./go/), and [`dotnet/`](./dotnet/) directories.
+
+The .NET port uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for magic-byte MIME sniffing and splits S3 helpers into a sub-package, so consumers who don't need AWS avoid pulling in the AWS SDK.
+
+## 🚀 Usage <a name="usage"></a>
+
+Jump to a pattern:
+
+- [Basic usage](#basic-usage)
+- [Streaming operations](#streaming-operations)
+- [S3 integration](#s3-integration)
+- [File type detection](#file-type-detection)
+- [FormData support](#formdata-support)
 - [Web File / Blob (Hono, Next.js, Browser)](#web-file)
 - [Validation (size, mime, content-vs-claim)](#validation)
-- [Base64 Encoding](#base64)
-- [Presigned Upload URL](#presigned-upload)
+- [Base64 encoding](#base64)
+- [Presigned upload URL](#presigned-upload)
 
-#### Basic Usage <a name="basic-usage"></a>
+#### Basic usage <a name="basic-usage"></a>
 
 ```typescript
 import File from '@smooai/file';
@@ -140,9 +124,9 @@ console.log(file.metadata);
 // }
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
-#### Streaming Operations <a name="streaming-operations"></a>
+#### Streaming operations <a name="streaming-operations"></a>
 
 ```typescript
 import File from '@smooai/file';
@@ -160,9 +144,9 @@ const bytes = await file.readFileBytes();
 const { original, newFile } = await file.saveToFile('downloads/file.zip');
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
-#### S3 Integration <a name="s3-integration"></a>
+#### S3 integration <a name="s3-integration"></a>
 
 ```typescript
 import File from '@smooai/file';
@@ -183,9 +167,9 @@ const s3File = await file.moveToS3('my-bucket', 'remote/file.jpg');
 const signedUrl = await s3File.getSignedUrl(3600); // URL expires in 1 hour
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
-#### File Type Detection <a name="file-type-detection"></a>
+#### File type detection <a name="file-type-detection"></a>
 
 ```typescript
 import File from '@smooai/file';
@@ -203,9 +187,9 @@ console.log(file.extension); // 'xml'
 // - Custom detectors
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
-#### FormData Support <a name="formdata-support"></a>
+#### FormData support <a name="formdata-support"></a>
 
 ```typescript
 import File from '@smooai/file';
@@ -222,7 +206,7 @@ await fetch('https://api.example.com/upload', {
 });
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
 #### Web File / Blob (Hono, Next.js, Browser) <a name="web-file"></a>
 
@@ -240,7 +224,7 @@ app.post('/upload', async (c) => {
 });
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
 #### Validation (size, mime, content-vs-claim) <a name="validation"></a>
 
@@ -266,9 +250,9 @@ try {
 
 `expectedMimeType` is the primary defense against mime-spoofing: a `.php` file uploaded with `Content-Type: image/png` will fail because magic-byte detection doesn't match the claim.
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
-#### Base64 Encoding (email attachments, data URLs) <a name="base64"></a>
+#### Base64 encoding (email attachments, data URLs) <a name="base64"></a>
 
 ```typescript
 import File from '@smooai/file';
@@ -286,9 +270,9 @@ await sendEmail({
 });
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
-#### Presigned Upload URL (server signs, client uploads direct to S3) <a name="presigned-upload"></a>
+#### Presigned upload URL (server signs, client uploads direct to S3) <a name="presigned-upload"></a>
 
 ```typescript
 import File from '@smooai/file';
@@ -304,9 +288,9 @@ const url = await File.createPresignedUploadUrl({
 });
 ```
 
-<p align="right">(<a href="#examples">back to examples</a>)</p>
+<p align="right">(<a href="#usage">back to usage</a>)</p>
 
-### Built With
+## 🔧 Built with
 
 - TypeScript
 - Node.js File System API
@@ -315,40 +299,45 @@ const url = await File.createPresignedUploadUrl({
 - [@smooai/fetch](https://github.com/SmooAI/fetch) for URL downloads
 - [@smooai/logger](https://github.com/SmooAI/logger) for structured logging
 
-## Contributing
+## 🧩 Part of Smoo AI <a name="part-of-smoo-ai"></a>
 
-Contributions are welcome! This project uses [changesets](https://github.com/changesets/changesets) to manage versions and releases.
+@smooai/file is part of the [Smoo AI](https://smoo.ai) platform — an AI-powered business platform with AI built into every product. It's one of a small family of open-source packages we maintain to keep our own stack honest. Use them in your stack, or take them as a reference for how we build.
 
-### Development Workflow
+- [@smooai/fetch](https://github.com/SmooAI/fetch) — typed HTTP with retries and structured errors
+- [@smooai/logger](https://github.com/SmooAI/logger) — contextual structured logging
+- [@smooai/config](https://github.com/SmooAI/config) — typed config, secrets, and feature flags
+- [smooth](https://github.com/SmooAI/smooth) — the agent orchestration toolkit
+
+Browse everything at [smoo.ai/open-source](https://smoo.ai/open-source) and [github.com/SmooAI](https://github.com/SmooAI).
+
+## 🤝 Contributing <a name="contributing"></a>
+
+Contributions are welcome. This project uses [changesets](https://github.com/changesets/changesets) to manage versions and releases.
+
+#### Development workflow
 
 1. Fork the repository
 2. Create your branch (`git checkout -b amazing-feature`)
 3. Make your changes
-4. Add a changeset to document your changes:
+4. Add a changeset to document them:
 
     ```sh
     pnpm changeset
     ```
 
-    This will prompt you to:
-    - Choose the type of version bump (patch, minor, or major)
-    - Provide a description of the changes
+    You'll be prompted to choose a version bump (patch, minor, or major) and describe the change.
 
 5. Commit your changes (`git commit -m 'Add some amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Pull Request Guidelines
-
-- Reference any related issues in your PR description
+7. Open a pull request — reference any related issues in the description
 
 The maintainers will review your PR and may request changes before merging.
 
-<!-- CONTACT -->
+## 📄 License <a name="license"></a>
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+MIT — see [LICENSE](./LICENSE).
 
-## Contact
+## 📬 Contact
 
 Brent Rager
 
@@ -358,29 +347,12 @@ Brent Rager
 - [TikTok](https://www.tiktok.com/@brentragertech)
 - [Instagram](https://www.instagram.com/brentragertech/)
 
-Smoo Github: [https://github.com/SmooAI](https://github.com/SmooAI)
+Smoo GitHub: [https://github.com/SmooAI](https://github.com/SmooAI)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+---
 
-[sst.dev-url]: https://reactjs.org/
-[sst]: https://img.shields.io/badge/sst-EDE1DA?style=for-the-badge&logo=sst&logoColor=E27152
-[sst-url]: https://sst.dev/
-[next]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
-[next-url]: https://nextjs.org/
-[aws]: https://img.shields.io/badge/aws-232F3E?style=for-the-badge&logo=amazonaws&logoColor=white
-[aws-url]: https://tailwindcss.com/
-[tailwindcss]: https://img.shields.io/badge/tailwind%20css-0B1120?style=for-the-badge&logo=tailwindcss&logoColor=#06B6D4
-[tailwindcss-url]: https://tailwindcss.com/
-[zod]: https://img.shields.io/badge/zod-3E67B1?style=for-the-badge&logoColor=3E67B1
-[zod-url]: https://zod.dev/
-[sanity]: https://img.shields.io/badge/sanity-F36458?style=for-the-badge
-[sanity-url]: https://www.sanity.io/
-[vitest]: https://img.shields.io/badge/vitest-1E1E20?style=for-the-badge&logo=vitest&logoColor=#6E9F18
-[vitest-url]: https://vitest.dev/
-[pnpm]: https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white
-[pnpm-url]: https://pnpm.io/
-[turborepo]: https://img.shields.io/badge/turborepo-000000?style=for-the-badge&logo=turborepo&logoColor=#EF4444
-[turborepo-url]: https://turbo.build/
+<p align="center">
+  Built by <a href="https://smoo.ai"><strong>Smoo AI</strong></a> — AI built into every product.
+</p>
