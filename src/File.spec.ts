@@ -39,31 +39,14 @@ const {
         setMockStreamContent(new Uint8Array(8));
     };
 
-    const createMockReadStream = () => {
-        const mockReader = {
-            read: vi.fn().mockResolvedValueOnce(new Uint8Array(8)).mockRejectedValue(new Uint8Array(0)),
-            on: vi.fn().mockImplementation((event, callback) => {
-                if (event === 'end') {
-                    callback();
-                }
-            }),
-        };
-
-        return mockReader as unknown as Readable;
-    };
+    // A real Readable, not a hand-rolled `{ read: () => Promise<bytes> }`. The old
+    // fake resolved a promise from `read()`, which a Node stream never does — it
+    // encoded the single-chunk truncation bug and so could never catch it.
+    const createMockReadStream = () => Readable.from([Buffer.from(new Uint8Array(8))]);
 
     // Helper function to create a mock typed stream
     const createMockTypedStream = (fileTypeOptions: Partial<FileTypeResult> = mockSteamFileTypeResult, content: Uint8Array = mockStreamContent) => {
-        const mockReader = {
-            read: vi.fn().mockResolvedValueOnce(content).mockRejectedValue(new Uint8Array(0)),
-            on: vi.fn().mockImplementation((event, callback) => {
-                if (event === 'end') {
-                    callback();
-                }
-            }),
-        };
-
-        return Object.assign(mockReader, {
+        return Object.assign(Readable.from([Buffer.from(content)]), {
             fileType: fileTypeOptions,
         }) as unknown as ReadableStreamWithFileType;
     };

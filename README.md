@@ -45,7 +45,7 @@
 | 🔒  | [**Trust the bytes**](#-trust-the-bytes-not-the-extension) | Magic-byte MIME detection catches spoofed uploads, in all five ports |
 | ☁️  | [**S3 in one call**](#️-s3-in-one-call)                     | Upload, download, signed URLs, presigned uploads with size caps      |
 | 🌐  | [**One API, many sources**](#-one-api-many-sources)        | Local · URL · bytes · stream · S3 · multipart, one `File` type       |
-| 🌊  | [**Lazy streaming**](#-lazy-streaming)                     | Streams ingest without full buffering — Python, Rust, Go, .NET       |
+| 🌊  | [**Lazy streaming**](#-lazy-streaming)                     | Streams ingest without full buffering — all five ports               |
 | 📝  | [**Rich metadata**](#-rich-metadata)                       | Detected MIME, size, timestamps, hash — on one object                |
 
 #### 🔒 Trust the bytes, not the extension
@@ -71,7 +71,7 @@ Local filesystem, URL download, S3 object, raw bytes, streams, multipart form up
 
 #### 🌊 Lazy streaming
 
-The **Python, Rust, Go, and .NET** ports ingest streams lazily — only a small head is read for MIME sniffing, and the rest of the bytes flow through without buffering the whole file (`from_stream(lazy=True)` · `from_stream_lazy` · `NewFromStreamLazy` · `CreateFromStreamLazyAsync`). The **TypeScript** port does not have lazy streaming yet: reading a file's bytes buffers the content — fine for typical uploads, not for multi-GB files. The honest per-port breakdown is in the [capability matrix](#five-languages-honestly).
+**All five ports** ingest streams lazily — only a 64 KiB head is read for MIME sniffing, and the rest of the bytes flow through without buffering the whole file (`createFromStreamLazy` · `from_stream(lazy=True)` · `from_stream_lazy` · `NewFromStreamLazy` · `CreateFromStreamLazyAsync`). The semantics are identical because all five test suites load one shared fixture, [`spec/lazy-stream-contract.json`](./spec/lazy-stream-contract.json) — head size, what stays lazy, what triggers a full read, and what a read after a full iteration does. The honest per-port breakdown is in the [capability matrix](#five-languages-honestly).
 
 #### 📝 Rich metadata
 
@@ -115,19 +115,19 @@ Language-specific source lives in [`src/`](./src/) (TypeScript), [`python/`](./p
 
 Every port carries the core promise: **magic-byte MIME detection, typed size/mime/content-mismatch validation, rich metadata, S3 upload + presigned/signed URLs, and creation from local files, URLs, bytes, streams, S3, and multipart uploads.** Beyond that the surfaces are uneven — here is the verified breakdown, so you know before you pick one:
 
-| Capability                                          |  TypeScript  | Python | Rust | Go  |                             .NET                             |
-| --------------------------------------------------- | :----------: | :----: | :--: | :-: | :----------------------------------------------------------: |
-| Magic-byte detection + typed `validate()`           |      ✅      |   ✅   |  ✅  | ✅  |                              ✅                              |
-| Lazy streaming ingest                               | ❌ (buffers) |   ✅   |  ✅  | ✅  |                              ✅                              |
-| Chunked reads (`iter_bytes`)                        |      ❌      |   ✅   |  ✅  | ✅  |                              ❌                              |
-| `pipeTo` a writable stream                          |      ✅      |   ❌   |  ❌  | ❌  |                              ❌                              |
-| `append` / `prepend` / `truncate`                   |      ✅      |   ✅   |  ❌  | ✅  |                              ❌                              |
-| `exists` / `isReadable` / `isWritable` / `getStats` |      ✅      |   ✅   |  ❌  | ❌  |                              ❌                              |
-| Upload to S3 + presigned upload URL                 |      ✅      |   ✅   |  ✅  | ✅  | ✅ ([S3 pkg](https://www.nuget.org/packages/SmooAI.File.S3)) |
-| Signed download URL                                 |      ✅      |   ✅   |  ✅  | ✅  |                              ✅                              |
-| `saveToS3` / `moveToS3` (returns new `File`)        |      ✅      |   ✅   |  ❌  | ❌  |                              ❌                              |
-| `downloadFromS3` (S3 → local path)                  |      ❌      |   ✅   |  ✅  | ✅  |                              ❌                              |
-| `setMetadata`                                       |      ✅      |   ✅   |  ✅  | ✅  |                              ❌                              |
+| Capability                                          | TypeScript | Python | Rust | Go  |                             .NET                             |
+| --------------------------------------------------- | :--------: | :----: | :--: | :-: | :----------------------------------------------------------: |
+| Magic-byte detection + typed `validate()`           |     ✅     |   ✅   |  ✅  | ✅  |                              ✅                              |
+| Lazy streaming ingest                               |     ✅     |   ✅   |  ✅  | ✅  |                              ✅                              |
+| Chunked reads (`iter_bytes`)                        |     ✅     |   ✅   |  ✅  | ✅  |                    ✅ (`OpenReadStream`)                     |
+| `pipeTo` a writable stream                          |     ✅     |   ❌   |  ❌  | ❌  |                              ❌                              |
+| `append` / `prepend` / `truncate`                   |     ✅     |   ✅   |  ❌  | ✅  |                              ❌                              |
+| `exists` / `isReadable` / `isWritable` / `getStats` |     ✅     |   ✅   |  ❌  | ❌  |                              ❌                              |
+| Upload to S3 + presigned upload URL                 |     ✅     |   ✅   |  ✅  | ✅  | ✅ ([S3 pkg](https://www.nuget.org/packages/SmooAI.File.S3)) |
+| Signed download URL                                 |     ✅     |   ✅   |  ✅  | ✅  |                              ✅                              |
+| `saveToS3` / `moveToS3` (returns new `File`)        |     ✅     |   ✅   |  ❌  | ❌  |                              ❌                              |
+| `downloadFromS3` (S3 → local path)                  |     ❌     |   ✅   |  ✅  | ✅  |                              ❌                              |
+| `setMetadata`                                       |     ✅     |   ✅   |  ✅  | ✅  |                              ❌                              |
 
 Same semantics where a capability exists in two ports; each port is written idiomatically for its ecosystem and carries its own test suite.
 

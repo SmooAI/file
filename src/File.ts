@@ -24,7 +24,18 @@ const parser = new FileTypeParser({
 
 const buildS3Client = () => new S3Client({ apiVersion: '2023-11-01' });
 
-const toDetectionStream = parser.toDetectionStream.bind(parser);
+/**
+ * Bytes pulled from a stream up-front for magic-byte detection, before the rest
+ * of the payload is left un-buffered.
+ *
+ * The same 64 KiB in all five ports (`LAZY_HEAD_BYTES` / `_HEAD_BYTES` /
+ * `streamHeadBytes` / `LazyHeadBytes`). The value is pinned by the shared
+ * contract fixture at `spec/lazy-stream-contract.json`, which every port's test
+ * suite loads — change it here and four other suites go red.
+ */
+export const LAZY_HEAD_BYTES = 64 * 1024;
+
+const toDetectionStream = (stream: NodeJS.ReadableStream) => parser.toDetectionStream(stream as Readable, { sampleSize: LAZY_HEAD_BYTES });
 
 /**
  * Represents metadata about a file including its properties and attributes.
@@ -162,6 +173,18 @@ export default class File {
 
     get source(): FileSource {
         return this.fileSource;
+    }
+
+    /**
+     * Whether the payload is still un-buffered — only the detection head has
+     * been pulled and the rest is still in the source stream.
+     *
+     * Goes false once the bytes have been materialised, by {@link readFileBytes},
+     * {@link pipeTo}, {@link uploadToS3}, or an eager constructor. Mirrors
+     * `is_lazy` / `IsLazy` in the other ports.
+     */
+    get isLazy(): boolean {
+        return this.bytes === undefined;
     }
 
     private set metadata(value: Metadata) {
@@ -410,7 +433,13 @@ export default class File {
     }
 
     /**
-     * Creates a new File instance from a readable stream.
+     * Creates a new File instance from a readable stream, buffering the whole
+     * payload up-front so `size` is exact and the bytes can be read repeatedly.
+     *
+     * Use {@link createFromStreamLazy} when the payload may be large: it pulls
+     * only {@link LAZY_HEAD_BYTES} for detection and leaves the tail in the
+     * stream.
+     *
      * @param {NodeJS.ReadableStream} stream - The readable stream
      * @param {MetadataHint} [metadataHint] - Optional metadata hints
      * @returns {Promise<File>} A new File instance
@@ -418,14 +447,104 @@ export default class File {
      * const file = await File.createFromStream(readableStream);
      */
     static async createFromStream(stream: NodeJS.ReadableStream, metadataHint?: MetadataHint): Promise<File> {
+        const file = await File.createFromStreamLazy(stream, metadataHint);
+        // Eager contract, matching `from_stream` in the other four ports: the
+        // payload is in memory and `size` is the real byte count when we return.
+        await file.readFileBytes();
+        return file;
+    }
+
+    /**
+     * Creates a new File instance from a readable stream **without** buffering
+     * the whole payload.
+     *
+     * Only the first {@link LAZY_HEAD_BYTES} are pulled, for magic-byte
+     * detection; the tail stays in the stream and is consumed by
+     * {@link readFileBytes}, {@link iterBytes}, {@link pipeTo}, or
+     * {@link uploadToS3}. This is the path that gets a multi-GB upload through
+     * a memory-constrained process.
+     *
+     * `size` stays undefined unless you hint it or the source turned out to be
+     * shorter than the detection head — the tail has not been measured yet.
+     *
+     * Mirrors `from_stream(lazy=True)` (Python), `from_stream_lazy` (Rust),
+     * `NewFromStreamLazy` (Go) and `CreateFromStreamLazyAsync` (.NET). The
+     * shared semantics are pinned by `spec/lazy-stream-contract.json`.
+     *
+     * @param {NodeJS.ReadableStream} stream - The readable stream
+     * @param {MetadataHint} [metadataHint] - Optional metadata hints
+     * @returns {Promise<File>} A new File instance
+     * @example
+     * const file = await File.createFromStreamLazy(req);
+     * await file.validate({ allowedMimes: ['image/png'] }); // head is enough
+     * await file.uploadToS3('bucket', 'key');               // tail streams through
+     */
+    static async createFromStreamLazy(stream: NodeJS.ReadableStream, metadataHint?: MetadataHint): Promise<File> {
         const nodeStream = new Readable().wrap(stream).pause();
-        const typedStream = await toDetectionStream(nodeStream);
+        const head = await File.readHead(nodeStream);
+        // A source that ran dry inside the head is already fully in memory, so
+        // there is nothing to be lazy about — fall back to the eager shape and
+        // report the exact size, exactly as the other four ports do.
+        const sourceExhausted = head.byteLength < LAZY_HEAD_BYTES;
+
+        // An exhausted source has already emitted 'end', and unshifting after that
+        // throws — replay the head from a fresh stream instead. Otherwise put the
+        // head back in front of the tail we haven't touched.
+        let rest: Readable;
+        if (sourceExhausted) {
+            rest = Readable.from([head]).pause();
+        } else {
+            nodeStream.unshift(head);
+            rest = nodeStream;
+        }
+
+        const typedStream = await toDetectionStream(rest);
         const metadata = await File.getFileMetadata({
-            metadataHint,
+            metadataHint: sourceExhausted ? { size: head.byteLength, ...metadataHint } : metadataHint,
             fileSource: FileSource.Stream,
             stream: typedStream,
         });
-        return new File(FileSource.Stream, typedStream, metadata);
+        const file = new File(FileSource.Stream, typedStream, metadata);
+        if (sourceExhausted) {
+            await file.readFileBytes();
+        }
+        return file;
+    }
+
+    /**
+     * Pulls up to {@link LAZY_HEAD_BYTES} off a paused stream, leaving the rest.
+     *
+     * Deliberately not `for await ... break`: breaking out of a Readable's async
+     * iterator destroys the stream, taking the tail with it.
+     */
+    private static readHead(stream: Readable): Promise<Buffer> {
+        return new Promise((resolve, reject) => {
+            const chunks: Buffer[] = [];
+            let total = 0;
+
+            const finish = (fn: () => void) => {
+                stream.off('readable', onReadable);
+                stream.off('end', onDone);
+                stream.off('error', onError);
+                fn();
+            };
+            const onReadable = () => {
+                let chunk: Buffer | null;
+                while (total < LAZY_HEAD_BYTES && (chunk = stream.read()) !== null) {
+                    chunks.push(chunk);
+                    total += chunk.byteLength;
+                }
+                if (total >= LAZY_HEAD_BYTES) {
+                    finish(() => resolve(Buffer.concat(chunks)));
+                }
+            };
+            const onDone = () => finish(() => resolve(Buffer.concat(chunks)));
+            const onError = (error: Error) => finish(() => reject(error));
+
+            stream.on('readable', onReadable);
+            stream.on('end', onDone);
+            stream.on('error', onError);
+        });
     }
 
     private static getFilenameFromUrl(urlString: string | undefined): string | null {
@@ -569,15 +688,32 @@ export default class File {
      * const bytes = await file.readFileBytes();
      */
     async readFileBytes(): Promise<ArrayBufferLike> {
+        return (await this.toBuffer()).buffer as ArrayBufferLike;
+    }
+
+    /**
+     * Yields the file contents chunk by chunk without ever holding the whole
+     * payload in memory — the read side of lazy streaming, and the counterpart
+     * to `iter_bytes` / `IterBytes` in the Python, Rust, and Go ports.
+     *
+     * Iterating a lazy file **consumes** the tail and does not cache it, so a
+     * later {@link readFileBytes} sees only what remains. Call
+     * {@link readFileBytes} instead when you need the bytes more than once.
+     *
+     * @example
+     * for await (const chunk of file.iterBytes()) {
+     *     hash.update(chunk);
+     * }
+     */
+    async *iterBytes(): AsyncGenerator<Buffer, void, undefined> {
         if (this.bytes) {
-            return this.bytes;
+            yield Buffer.from(this.bytes);
+            return;
         }
 
-        const reader = this.stream;
-
-        const buffer: Buffer | null = await reader.read();
-        this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
-        return new Uint8Array(this.bytes).buffer;
+        for await (const chunk of this.stream) {
+            yield Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
+        }
     }
 
     /**
@@ -786,17 +922,14 @@ export default class File {
      * await file.uploadToS3('my-bucket', 'path/to/file.txt');
      */
     async uploadToS3(bucket: string, key: string): Promise<void> {
-        const reader = this.stream;
-
-        const buffer: Buffer | null = await reader.read();
-        this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
+        const body = await this.toBuffer();
 
         const command = new PutObjectCommand({
             Bucket: bucket,
             Key: key,
-            Body: Buffer.from(this.bytes),
+            Body: body,
             ContentType: this.metadata.mimeType,
-            ContentLength: this.metadata.size,
+            ContentLength: body.byteLength,
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
@@ -813,12 +946,13 @@ export default class File {
      */
     async saveToS3(bucket: string, key: string): Promise<{ original: File; newFile: File }> {
         // Upload to S3 and create new file instance
+        const body = await this.toBuffer();
         const command = new PutObjectCommand({
             Bucket: bucket,
             Key: key,
-            Body: await this.toBuffer(),
+            Body: body,
             ContentType: this.metadata.mimeType,
-            ContentLength: this.metadata.size,
+            ContentLength: body.byteLength,
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
@@ -1024,12 +1158,29 @@ export default class File {
         throw new Error('Cannot generate signed URL for non-S3 file');
     }
 
+    /**
+     * Drains the whole payload into memory and caches it.
+     *
+     * This used to be a single `await stream.read()`, which returns only what
+     * the stream happens to have buffered — one chunk. Every file bigger than
+     * one chunk was therefore silently truncated on its way through
+     * `readFileBytes`, `getChecksum`, `toFormData` and `uploadToS3`.
+     */
     private async toBuffer(): Promise<Buffer> {
-        const reader = this.stream;
+        if (this.bytes) {
+            return Buffer.from(this.bytes);
+        }
 
-        const buffer: Buffer | null = await reader.read();
-        this.bytes = buffer !== null ? buffer.buffer : Buffer.from([]).buffer;
+        const chunks: Buffer[] = [];
+        for await (const chunk of this.stream) {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array));
+        }
 
+        const buffer = Buffer.concat(chunks);
+        // Slice off the backing ArrayBuffer rather than handing out `.buffer`,
+        // which for a pooled Node Buffer is a slab shared with other Buffers.
+        this.bytes = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+        this.metadata.size ??= buffer.byteLength;
         return Buffer.from(this.bytes);
     }
 }
