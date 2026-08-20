@@ -10,7 +10,7 @@
     <PackageId>SmooAI.File</PackageId>
     <RootNamespace>SmooAI.File</RootNamespace>
     <AssemblyName>SmooAI.File</AssemblyName>
-    <Version>2.2.15</Version>
+    <Version>2.2.16</Version>
     <Description>File utilities with magic-byte MIME detection (via Mime-Detective) and typed validation errors. Use SmooAI.File.S3 for S3 upload/download helpers.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

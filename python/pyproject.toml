@@ -1,6 +1,6 @@
 [project]
 name = "smooai-file"
-version = "2.2.15"
+version = "2.2.16"
 description = "A unified file handling library for working with files from local filesystem, S3, URLs, and streams."
 readme = "README.md"
 authors = [{ name = "SmooAI", email = "brent@smooai.com" }]
