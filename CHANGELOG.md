@@ -1,5 +1,23 @@
 # @smooai/file
 
+## 2.2.16
+
+### Patch Changes
+
+- 011a035: Make the .NET port visible to the local quality gates.
+
+    `package.json` had no `dotnet:*` scripts, so `pnpm test`, `pnpm build`, `pnpm format:check` and `pnpm check-all` — which CLAUDE.md calls "full CI parity" — all silently skipped one of the five ports. The only thing exercising .NET was a separate trailing step in `pr-checks.yml`, so a developer could run every local gate green and still break the port.
+
+    Adds `dotnet:build`, `dotnet:test`, `dotnet:format` and `dotnet:format:check`, wires them into `build`, `test`, `format` and `format:check`, and folds the per-language format checks into `format:check` so the local gate and CI cannot disagree about what "formatted" means. `check-all` gets shorter as a result, without losing coverage. The .NET SDK is now a prerequisite for `pnpm test` — documented in CLAUDE.md, which had no .NET section at all.
+
+- 751d5fe: Make the validation-error taxonomy portable across all five ports, and add `SetMetadata` to .NET.
+
+    Catching by type doesn't survive the language boundary: TypeScript, Python and .NET raise three distinct classes, Rust collapses them into one enum, and Go returns one struct with a `Kind` field. Code meant to behave the same in more than one port had nothing to branch on. All five now carry the same `kind` discriminant — `"size"`, `"mime"`, `"content_mismatch"` — alongside the existing shapes, so nothing about the published APIs changes. `spec/error-taxonomy.json` pins the values and the structured fields each one carries, and all five test suites load it.
+
+    `SmooFile.SetMetadata` closes the one arbitrary gap in the matrix: every other port already had it.
+
+    Also corrects two README rows this work proved wrong. `downloadFromS3` was marked ✅ for Rust and Go, but only Python writes an S3 object to a local path — Rust's is a plain alias for `from_s3` and Go's replaces the receiver in place, neither touching the filesystem.
+
 ## 2.2.15
 
 ### Patch Changes
