@@ -52,6 +52,17 @@ const goTagExists = () => {
     }
 };
 
+/**
+ * Registries the --assert guard holds strictly. NuGet is deliberately absent: its
+ * index takes minutes to tens of minutes to show a package that has already been
+ * accepted ("Your package was pushed"), so asserting on it would redden a release
+ * that succeeded — and a guard that cries wolf gets deleted. NuGet keeps its own
+ * protection: `dotnet nuget push` exits non-zero on a real failure, and with the
+ * per-registry gate it is skipped only when the version is genuinely already there.
+ * Its state is still reported below, just not enforced.
+ */
+const ASSERTED = ['npm', 'pypi', 'crates', 'go'];
+
 const registries = {
     npm: () => ok(`https://registry.npmjs.org/@smooai/file/${version}`),
     pypi: () => ok(`https://pypi.org/pypi/smooai-file/${version}/json`),
@@ -79,11 +90,14 @@ const until = async (satisfied, timeoutMs) => {
     return result;
 };
 
+const expectNpm = process.argv.includes('--expect-npm');
+const assert = process.argv.includes('--assert');
+
 let present;
-if (process.argv.includes('--expect-npm')) {
+if (expectNpm) {
     present = await until((r) => r.npm, 120_000);
-} else if (process.argv.includes('--assert')) {
-    present = await until((r) => !r.npm || Object.values(r).every(Boolean), 180_000);
+} else if (assert) {
+    present = await until((r) => !r.npm || ASSERTED.every((name) => r[name]), 300_000);
 } else {
     present = await probe();
 }
@@ -93,17 +107,29 @@ for (const [name, has] of Object.entries(present)) {
     console.log(`  ${has ? '✓' : '·'} ${name.padEnd(7)} ${has ? 'published' : 'missing'}`);
 }
 
+// --expect-npm is passed only when changesets reported a successful npm publish.
+// Still reading "missing" after the wait means the PROBE is wrong, not that npm is
+// empty — and every downstream gate is `!has && present.npm`, so a false npm
+// reading would switch all four publishes off and let the run go green having
+// shipped nothing. That is the same fail-open this script exists to remove, so
+// fail instead of guessing.
+if (expectNpm && !present.npm) {
+    console.error(`\n✗ changesets reported publishing ${version}, but npm still does not show it after 2 minutes.`);
+    console.error(`  Refusing to continue: the other four registries are gated on this reading.`);
+    process.exit(1);
+}
+
 if (process.argv.includes('--github') && process.env.GITHUB_OUTPUT) {
     const lines = Object.entries(present).map(([name, has]) => `${name}_missing=${!has && present.npm}`);
     appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\nnpm_published=${present.npm}\n`);
 }
 
-if (process.argv.includes('--assert')) {
+if (assert) {
     // Only meaningful once npm carries the version — before that, nothing is
     // "stranded", the release simply hasn't happened.
-    const stranded = present.npm ? Object.entries(present).filter(([, has]) => !has) : [];
+    const stranded = present.npm ? ASSERTED.filter((name) => !present[name]) : [];
     if (stranded.length > 0) {
-        console.error(`\n✗ npm published ${version} but ${stranded.map(([n]) => n).join(', ')} did not.`);
+        console.error(`\n✗ npm published ${version} but ${stranded.join(', ')} did not.`);
         console.error(`  Those ports are still shipping the previous release. Re-run this workflow — each`);
         console.error(`  publish step is gated on its own registry, so a retry ships exactly what is missing.`);
         process.exit(1);
