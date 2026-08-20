@@ -27,6 +27,14 @@
     },
     "cases": [
         {
+            "name": "empty",
+            "sourceBytes": 0,
+            "$comment": "A zero-byte source. Empty S3 objects and zero-length uploads are real, and this is the boundary where \"shorter than the head\" degenerates — every port must still report an exact size of 0 rather than an unknown one.",
+            "lazyAfterConstruct": false,
+            "sizeKnownAfterConstruct": true,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
             "name": "shorter-than-head",
             "sourceBytes": 1024,
             "$comment": "Source ends inside the detection head, so the lazy constructor already holds the whole payload and behaves eagerly.",
