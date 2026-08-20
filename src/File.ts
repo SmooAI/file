@@ -2,8 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
-import { GetObjectCommand, GetObjectCommandOutput, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import type { GetObjectCommandOutput, S3Client } from '@aws-sdk/client-s3';
 import { detectXml } from '@file-type/xml';
 import contentDisposition from 'content-disposition';
 import { fileTypeFromFile, FileTypeParser, ReadableStreamWithFileType } from 'file-type/node';
@@ -22,7 +21,24 @@ const parser = new FileTypeParser({
     customDetectors: [detectXml],
 });
 
-const buildS3Client = () => new S3Client({ apiVersion: '2023-11-01' });
+/**
+ * Loads the AWS SDK on first S3 use rather than at import time.
+ *
+ * `require('@aws-sdk/client-s3')` costs ~110ms, and it used to be paid by every
+ * consumer of this package on `import File from '@smooai/file'` — including the
+ * many that only ever read local files. The two `import type`s above are erased
+ * at compile time, so nothing pulls the SDK in until an S3 method is called.
+ *
+ * The dynamic import is memoised by the module system, so this is one load per
+ * process, not one per call.
+ */
+const loadS3 = () => import('@aws-sdk/client-s3');
+const loadPresigner = () => import('@aws-sdk/s3-request-presigner');
+
+const buildS3Client = async (): Promise<S3Client> => {
+    const { S3Client: Client } = await loadS3();
+    return new Client({ apiVersion: '2023-11-01' });
+};
 
 /**
  * Bytes pulled from a stream up-front for magic-byte detection, before the rest
@@ -116,7 +132,13 @@ export enum FileSource {
  * const file = await File.createFromStream(readableStream);
  */
 export default class File {
-    private s3Client: S3Client = buildS3Client();
+    private s3ClientPromise: Promise<S3Client> | undefined;
+
+    /** The instance's S3 client, built on first use. See {@link buildS3Client}. */
+    private s3Client(): Promise<S3Client> {
+        this.s3ClientPromise ??= buildS3Client();
+        return this.s3ClientPromise;
+    }
 
     private fileSource!: FileSource;
     private _stream!: ReadableStreamWithFileType;
@@ -289,11 +311,12 @@ export default class File {
      * const file = await File.createFromS3('my-bucket', 'path/to/file.txt');
      */
     static async createFromS3(bucket: string, key: string, metadataHint?: MetadataHint): Promise<File> {
+        const { GetObjectCommand } = await loadS3();
         const command = new GetObjectCommand({
             Bucket: bucket,
             Key: key,
         });
-        const s3Client = buildS3Client();
+        const s3Client = await buildS3Client();
         const response = await s3Client.send(command);
         invariant(response.Body, 'Response body is missing');
 
@@ -398,7 +421,8 @@ export default class File {
         maxSize?: number;
     }): Promise<string> {
         const { bucket, key, contentType, expiresIn = 3600, maxSize } = options;
-        const client = buildS3Client();
+        const [{ PutObjectCommand }, { getSignedUrl }] = await Promise.all([loadS3(), loadPresigner()]);
+        const client = await buildS3Client();
         const command = new PutObjectCommand({
             Bucket: bucket,
             Key: key,
@@ -924,6 +948,7 @@ export default class File {
     async uploadToS3(bucket: string, key: string): Promise<void> {
         const body = await this.toBuffer();
 
+        const { PutObjectCommand } = await loadS3();
         const command = new PutObjectCommand({
             Bucket: bucket,
             Key: key,
@@ -933,7 +958,7 @@ export default class File {
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
-        await this.s3Client.send(command);
+        await (await this.s3Client()).send(command);
     }
 
     /**
@@ -947,6 +972,7 @@ export default class File {
     async saveToS3(bucket: string, key: string): Promise<{ original: File; newFile: File }> {
         // Upload to S3 and create new file instance
         const body = await this.toBuffer();
+        const { PutObjectCommand } = await loadS3();
         const command = new PutObjectCommand({
             Bucket: bucket,
             Key: key,
@@ -956,7 +982,7 @@ export default class File {
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
-        await this.s3Client.send(command);
+        await (await this.s3Client()).send(command);
 
         // Create new file instance
         const newFile = await File.createFromS3(bucket, key);
@@ -974,6 +1000,7 @@ export default class File {
      */
     async moveToS3(bucket: string, key: string): Promise<File> {
         // Upload to S3 and get new file instance
+        const { PutObjectCommand } = await loadS3();
         const command = new PutObjectCommand({
             Bucket: bucket,
             Key: key,
@@ -983,7 +1010,7 @@ export default class File {
             ContentDisposition: this.metadata.name ? `attachment; filename="${this.metadata.name}"` : undefined,
         });
 
-        await this.s3Client.send(command);
+        await (await this.s3Client()).send(command);
 
         // If this is a file on disk, delete it
         if (this.fileSource === FileSource.File && this.metadata.path) {
@@ -1149,11 +1176,12 @@ export default class File {
     async getSignedUrl(expiresIn: number = 3600): Promise<string> {
         if (this.fileSource === FileSource.S3 && this.metadata.url) {
             const [bucket, key] = this.metadata.url.replace('s3://', '').split('/', 2);
+            const [{ GetObjectCommand }, { getSignedUrl }] = await Promise.all([loadS3(), loadPresigner()]);
             const command = new GetObjectCommand({
                 Bucket: bucket,
                 Key: key,
             });
-            return await getSignedUrl(this.s3Client, command, { expiresIn });
+            return await getSignedUrl(await this.s3Client(), command, { expiresIn });
         }
         throw new Error('Cannot generate signed URL for non-S3 file');
     }
