@@ -134,9 +134,10 @@ jobs:
               env:
                   UV_PUBLISH_TOKEN: ${{ secrets.SMOOAI_PYPI_TOKEN }}
               run: |
-                  # Clean stale build artifacts from the earlier `pnpm build` run
-                  # (which produced wheels at the pre-sync version) so `uv publish`
-                  # doesn't try to upload the stale files alongside the fresh ones.
+                  # Clean artifacts from the earlier `pnpm build` step so `uv publish`
+                  # uploads only what it just built. (The version they carry is no
+                  # longer stale — sync-versions runs in the `version` lifecycle now —
+                  # but a leftover wheel from a previous version still would be.)
                   rm -rf dist/
                   uv run poe publish
 
@@ -205,10 +206,13 @@ jobs:
               env:
                   NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
-            # Fails the run if npm published this version and any of the other four
-            # did not. Without it, a partial publish is indistinguishable from a
-            # version-PR run: both are green, and four ports quietly keep shipping
-            # the previous release.
+            # Fails the run if npm published this version and PyPI, crates.io or the
+            # Go tag did not. Without it a partial publish is indistinguishable from
+            # a version-PR run — both are green — and those ports quietly keep
+            # shipping the previous release. NuGet is reported but not asserted: its
+            # index lags an accepted push by minutes to tens of minutes, so holding
+            # it strictly would redden every successful release. See
+            # scripts/check-registries.mjs.
             - name: Verify no registry was stranded
               run: node scripts/check-registries.mjs --assert
 
