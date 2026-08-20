@@ -127,10 +127,11 @@ func TestContractLazyConstructor(t *testing.T) {
 			if f.IsLazy() != tc.LazyAfterConstruct {
 				t.Errorf("IsLazy() = %v, contract says %v", f.IsLazy(), tc.LazyAfterConstruct)
 			}
-			// Go has no optional int64, so "size unknown" is 0 here rather than
-			// nil/undefined as in the other four ports.
-			if (f.Size() != 0) != tc.SizeKnownAfterConstruct {
-				t.Errorf("Size() = %d, size-known should be %v", f.Size(), tc.SizeKnownAfterConstruct)
+			// Go has no optional int64, so it answers "is this measured?" with
+			// SizeKnown() where the other four ports use nil/None/undefined.
+			// `Size() != 0` is NOT the same question — it is wrong for an empty file.
+			if f.SizeKnown() != tc.SizeKnownAfterConstruct {
+				t.Errorf("SizeKnown() = %v, contract says %v (Size() = %d)", f.SizeKnown(), tc.SizeKnownAfterConstruct, f.Size())
 			}
 		})
 	}
@@ -199,8 +200,8 @@ func TestContractEagerConstructorBuffersEverything(t *testing.T) {
 			if f.IsLazy() != c.EagerConstructor.LazyAfterConstruct {
 				t.Errorf("IsLazy() = %v, contract says %v", f.IsLazy(), c.EagerConstructor.LazyAfterConstruct)
 			}
-			if (f.Size() != 0) != c.EagerConstructor.SizeKnownAfterConstruct {
-				t.Errorf("Size() = %d, size-known should be %v", f.Size(), c.EagerConstructor.SizeKnownAfterConstruct)
+			if f.SizeKnown() != c.EagerConstructor.SizeKnownAfterConstruct {
+				t.Errorf("SizeKnown() = %v, contract says %v", f.SizeKnown(), c.EagerConstructor.SizeKnownAfterConstruct)
 			}
 			if f.Size() != int64(tc.SourceBytes) {
 				t.Errorf("Size() = %d, want %d", f.Size(), tc.SourceBytes)

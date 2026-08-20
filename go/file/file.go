@@ -81,6 +81,13 @@ type File struct {
 	lazy       bool
 	streamHead []byte
 	streamTail io.Reader
+
+	// sizeUnknown marks a size that has not been measured, as opposed to a
+	// measured zero. Go has no optional int64, so `Size() == 0` alone cannot
+	// tell an empty file from a lazy stream whose tail nobody has counted yet —
+	// the other four ports say that with nil/None/undefined. Zero value is
+	// false ("known"), so every eager constructor is correct without touching it.
+	sizeUnknown bool
 }
 
 // streamHeadBytes is the size of the head buffer read up-front for magic-byte
@@ -298,17 +305,19 @@ func NewFromStreamLazy(r io.Reader, hints ...MetadataHint) (*File, error) {
 	meta := resolveMetadataFromBytes(head, hint)
 	// We only know a partial size. Zero it unless the caller hinted the true
 	// content-length.
-	if !hint.hasSize() {
+	sizeUnknown := !hint.hasSize()
+	if sizeUnknown {
 		meta.Size = 0
 	}
 
 	return &File{
-		source:     SourceStream,
-		meta:       meta,
-		lazy:       true,
-		streamHead: head,
-		streamTail: r,
-		loaded:     false,
+		source:      SourceStream,
+		meta:        meta,
+		lazy:        true,
+		streamHead:  head,
+		streamTail:  r,
+		loaded:      false,
+		sizeUnknown: sizeUnknown,
 	}, nil
 }
 
@@ -369,6 +378,14 @@ func (f *File) MimeType() string { return f.meta.MimeType }
 // Size returns the file size in bytes.
 func (f *File) Size() int64 { return f.meta.Size }
 
+// SizeKnown reports whether Size has actually been measured. It is false only
+// for a lazy stream whose tail has not been counted and whose caller passed no
+// size hint — the case where Size() returns 0 but the file is not empty.
+//
+// The other four ports express this with an optional type (nil / None /
+// undefined); Go has no optional int64, so it needs its own accessor.
+func (f *File) SizeKnown() bool { return !f.sizeUnknown }
+
 // IsLazy reports whether the payload is still un-buffered — only the detection
 // head has been read and the tail is still in the source reader.
 //
@@ -406,6 +423,7 @@ func (f *File) SetMetadata(hint MetadataHint) {
 	}
 	if hint.hasSize() {
 		f.meta.Size = hint.Size
+		f.sizeUnknown = false
 	}
 	if hint.hasExtension() {
 		f.meta.Extension = hint.Extension
@@ -452,6 +470,7 @@ func (f *File) Read() ([]byte, error) {
 		f.streamTail = nil
 		f.lazy = false
 		f.meta.Size = int64(len(combined))
+		f.sizeUnknown = false
 		return f.data, nil
 	}
 	return nil, newError(ErrRead, "Read", fmt.Errorf("no data available"))
@@ -516,6 +535,7 @@ func (f *File) IterBytes(ctx context.Context) (<-chan []byte, <-chan error) {
 				}
 			}
 			f.meta.Size = total
+			f.sizeUnknown = false
 			return
 		}
 
