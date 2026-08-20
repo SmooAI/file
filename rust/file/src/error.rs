@@ -72,6 +72,24 @@ pub enum FileValidationError {
     },
 }
 
+impl FileValidationError {
+    /// The portable discriminant for this failure.
+    ///
+    /// The same three string values in all five ports — Go's `ValidationKind`,
+    /// and the `kind` field on TypeScript's error classes, Python's exceptions
+    /// and .NET's `FileValidationException`. Catching by TYPE is not portable
+    /// (this enum has no subclasses to catch, Go has one struct with a field),
+    /// so this is what code that has to work the same in more than one language
+    /// branches on. Pinned by `spec/error-taxonomy.json`.
+    pub fn kind(&self) -> &'static str {
+        match self {
+            FileValidationError::SizeExceeded { .. } => "size",
+            FileValidationError::MimeNotAllowed { .. } => "mime",
+            FileValidationError::ContentMismatch { .. } => "content_mismatch",
+        }
+    }
+}
+
 impl fmt::Display for FileValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
