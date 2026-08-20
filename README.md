@@ -6,8 +6,15 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@smooai/file"><img src="https://img.shields.io/npm/v/@smooai/file?style=for-the-badge&color=00A6A6&label=npm&logo=npm&logoColor=white&labelColor=020618" alt="npm"></a>
+  <a href="https://pypi.org/project/smooai-file/"><img src="https://img.shields.io/pypi/v/smooai-file?style=for-the-badge&color=F49F0A&label=PyPI&logo=python&logoColor=white&labelColor=020618" alt="PyPI"></a>
+  <a href="https://crates.io/crates/smooai-file"><img src="https://img.shields.io/crates/v/smooai-file?style=for-the-badge&color=FF6B6C&label=crates.io&logo=rust&logoColor=white&labelColor=020618" alt="crates.io"></a>
+  <a href="https://www.nuget.org/packages/SmooAI.File"><img src="https://img.shields.io/nuget/v/SmooAI.File?style=for-the-badge&color=00A6A6&label=NuGet&logo=nuget&logoColor=white&labelColor=020618" alt="NuGet"></a>
+</p>
+
+<p align="center">
   <a href="https://smoo.ai"><img src="https://img.shields.io/badge/Smoo_AI-platform-00A6A6?style=for-the-badge&labelColor=020618" alt="Smoo AI"></a>
-  <img src="https://img.shields.io/badge/license-MIT-F49F0A?style=for-the-badge&labelColor=020618" alt="license">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-F49F0A?style=for-the-badge&labelColor=020618" alt="license"></a>
+  <a href="https://github.com/SmooAI/file/actions/workflows/release.yml"><img src="https://github.com/SmooAI/file/actions/workflows/release.yml/badge.svg" alt="CI"></a>
 </p>
 
 <p align="center">
@@ -20,51 +27,78 @@
 </p>
 
 <p align="center">
-  <a href="#-features"><b>Features</b></a> &nbsp;·&nbsp; <a href="#-install"><b>Install</b></a> &nbsp;·&nbsp; <a href="#-usage"><b>Usage</b></a> &nbsp;·&nbsp; <a href="#-part-of-smoo-ai"><b>Platform</b></a>
+  <a href="#-features"><b>Features</b></a> &nbsp;·&nbsp;
+  <a href="#-install"><b>Install</b></a> &nbsp;·&nbsp;
+  <a href="#five-languages-honestly"><b>Language status</b></a> &nbsp;·&nbsp;
+  <a href="#-usage"><b>Usage</b></a> &nbsp;·&nbsp;
+  <a href="#-part-of-smoo-ai"><b>Platform</b></a>
 </p>
 
 ---
 
-> A file abstraction that trusts the bytes, not the extension. Built for backends that take uploads from the open internet: magic-byte MIME detection, size and content validation, and presigned S3 uploads — all stream-first, so a 2 GB upload never buffers into your Lambda memory.
+> **A file abstraction that trusts the bytes, not the extension.** Built for backends that take uploads from the open internet: magic-byte MIME detection, size and content validation, and presigned S3 uploads — one `File` API over local files, URLs, streams, S3 objects, and browser uploads, ported natively to **five languages**: TypeScript, Python, Rust, Go, and .NET.
 
 ## ✨ Features <a name="features"></a>
+
+|     | Capability                                                 | What you get                                                         |
+| --- | ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| 🔒  | [**Trust the bytes**](#-trust-the-bytes-not-the-extension) | Magic-byte MIME detection catches spoofed uploads, in all five ports |
+| ☁️  | [**S3 in one call**](#️-s3-in-one-call)                     | Upload, download, signed URLs, presigned uploads with size caps      |
+| 🌐  | [**One API, many sources**](#-one-api-many-sources)        | Local · URL · bytes · stream · S3 · multipart, one `File` type       |
+| 🌊  | [**Lazy streaming**](#-lazy-streaming)                     | Streams ingest without full buffering — Python, Rust, Go, .NET       |
+| 📝  | [**Rich metadata**](#-rich-metadata)                       | Detected MIME, size, timestamps, hash — on one object                |
 
 #### 🔒 Trust the bytes, not the extension
 
 Magic-byte MIME detection catches spoofed uploads. A `.php` renamed to `avatar.png` fails validation because the bytes disagree with the claim.
 
-- Magic-byte detection across 100+ file types
-- `FileContentMismatchError` when client-claimed MIME disagrees with the bytes
-- `FileSizeError` / `FileMimeError` for oversize or disallowed uploads
-- One `validate()` call, typed error types, map cleanly to HTTP 400
+- Magic-byte detection across 100+ file types — in every port
+- Validation fails with a **typed error** when the client-claimed MIME disagrees with the bytes, when the file is oversize, or when the type isn't allowed
+- One `validate()` call; the errors map cleanly to HTTP 400
+
+The error shape is idiomatic per language: TypeScript and Python throw `FileContentMismatchError` / `FileSizeError` / `FileMimeError` (all extending `FileValidationError`); .NET throws the same three as exceptions; Rust has a `FileValidationError` enum; Go returns one `FileValidationError` with a `Kind` field (`size` · `mime` · `content_mismatch`).
 
 #### ☁️ S3 in one call
 
-- Stream any file (local, URL, Blob) straight into S3
-- Pull S3 objects back through the same validation pipeline
-- Presigned upload URLs with `maxSize` baked into the signature, so oversized uploads are rejected by S3 before they hit you
+- Stream a file into S3 and pull S3 objects back through the same validation pipeline — all five ports
+- Presigned upload URLs with `maxSize` baked into the signature, so oversized uploads are rejected by S3 before they hit you — all five ports
+- Signed download URLs — all five ports
+- In .NET, S3 support is the separate [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) package, so .NET consumers who only need detection/validation skip the AWS SDK dependency (the TypeScript package currently ships its AWS SDK dependencies unconditionally)
 
 #### 🌐 One API, many sources
 
-Local filesystem, URL download, S3 object, multipart FormData, or a browser `File`/`Blob` — all resolve to the same `File` instance with the same validation and metadata surface.
+Local filesystem, URL download, S3 object, raw bytes, streams, multipart form uploads, or a browser `File`/`Blob` — all resolve to the same `File` instance with the same validation and metadata surface.
 
-#### 🚀 Stream-first under the hood
+#### 🌊 Lazy streaming
 
-Bytes load lazily so a 2 GB upload doesn't buffer into memory. Automatic handling across Node.js and Web streams — you never have to pick the right pipe.
+The **Python, Rust, Go, and .NET** ports ingest streams lazily — only a small head is read for MIME sniffing, and the rest of the bytes flow through without buffering the whole file (`from_stream(lazy=True)` · `from_stream_lazy` · `NewFromStreamLazy` · `CreateFromStreamLazyAsync`). The **TypeScript** port does not have lazy streaming yet: reading a file's bytes buffers the content — fine for typical uploads, not for multi-GB files. The honest per-port breakdown is in the [capability matrix](#five-languages-honestly).
 
 #### 📝 Rich metadata
 
 File name, real (detected) MIME type, size, created/modified timestamps, hash/checksum, source type — all on one object.
 
-## 📦 Install <a name="install"></a>
+### How it fits together
 
-```sh
-pnpm add @smooai/file
+```mermaid
+%%{init: {'theme':'base','themeVariables':{
+  'background':'#020618','primaryColor':'#0b1426','primaryTextColor':'#e6edf6','primaryBorderColor':'#2b3a52',
+  'lineColor':'#7c8aa0','secondaryColor':'#0b1426','tertiaryColor':'#0b1426','fontFamily':'ui-sans-serif, system-ui, sans-serif',
+  'clusterBkg':'#0b1426','clusterBorder':'#22304a'}}}%%
+flowchart LR
+  SRC["local file · URL · bytes<br/>stream · S3 · multipart · Blob"] --> F
+  subgraph F["File"]
+    D["magic-byte MIME detection"] --> V["validate()<br/>size · allowed types · claim vs bytes"]
+    V --> M["metadata<br/>name · MIME · size · hash"]
+  end
+  F --> OUT["save · S3 upload · FormData<br/>base64 · signed URLs"]
+
+  classDef warm fill:#f49f0a,stroke:#ff6b6c,color:#1a0f00;
+  classDef teal fill:#00a6a6,stroke:#00c2c2,color:#011;
+  class V warm
+  class SRC,OUT teal
 ```
 
-### Multi-language support
-
-@smooai/file ships as native implementations in **TypeScript**, **Python**, **Rust**, **Go**, and **.NET (C#)** — each built with idiomatic patterns for its ecosystem.
+## 📦 Install <a name="install"></a>
 
 | Language    | Package                                                           | Install                                 |
 | ----------- | ----------------------------------------------------------------- | --------------------------------------- |
@@ -75,16 +109,38 @@ pnpm add @smooai/file
 | .NET (core) | [`SmooAI.File`](https://www.nuget.org/packages/SmooAI.File)       | `dotnet add package SmooAI.File`        |
 | .NET (S3)   | [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) | `dotnet add package SmooAI.File.S3`     |
 
-Language-specific source lives in the [`python/`](./python/), [`rust/`](./rust/), [`go/`](./go/), and [`dotnet/`](./dotnet/) directories.
+> **Go note:** `go get` currently resolves a pseudo-version tracking `main` (the module path doesn't yet carry the `/v2` suffix the `go/file/v2.x` tags would need, so tagged versions don't resolve). `main` is what's released everywhere else; a proper `/v2` module path is planned.
 
-The .NET port uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for magic-byte MIME sniffing and splits S3 helpers into a sub-package, so consumers who don't need AWS avoid pulling in the AWS SDK.
+Language-specific source lives in [`src/`](./src/) (TypeScript), [`python/`](./python/), [`rust/`](./rust/), [`go/`](./go/), and [`dotnet/`](./dotnet/). The .NET port uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for magic-byte MIME sniffing.
+
+## Five languages, honestly
+
+Every port carries the core promise: **magic-byte MIME detection, typed size/mime/content-mismatch validation, rich metadata, S3 upload + presigned/signed URLs, and creation from local files, URLs, bytes, streams, S3, and multipart uploads.** Beyond that the surfaces are uneven — here is the verified breakdown, so you know before you pick one:
+
+| Capability                                          |  TypeScript  | Python | Rust | Go  |                             .NET                             |
+| --------------------------------------------------- | :----------: | :----: | :--: | :-: | :----------------------------------------------------------: |
+| Magic-byte detection + typed `validate()`           |      ✅      |   ✅   |  ✅  | ✅  |                              ✅                              |
+| Lazy streaming ingest                               | ❌ (buffers) |   ✅   |  ✅  | ✅  |                              ✅                              |
+| Chunked reads (`iter_bytes`)                        |      ❌      |   ✅   |  ✅  | ✅  |                              ❌                              |
+| `pipeTo` a writable stream                          |      ✅      |   ❌   |  ❌  | ❌  |                              ❌                              |
+| `append` / `prepend` / `truncate`                   |      ✅      |   ✅   |  ❌  | ✅  |                              ❌                              |
+| `exists` / `isReadable` / `isWritable` / `getStats` |      ✅      |   ✅   |  ❌  | ❌  |                              ❌                              |
+| Upload to S3 + presigned upload URL                 |      ✅      |   ✅   |  ✅  | ✅  | ✅ ([S3 pkg](https://www.nuget.org/packages/SmooAI.File.S3)) |
+| Signed download URL                                 |      ✅      |   ✅   |  ✅  | ✅  |                              ✅                              |
+| `saveToS3` / `moveToS3` (returns new `File`)        |      ✅      |   ✅   |  ❌  | ❌  |                              ❌                              |
+| `downloadFromS3` (S3 → local path)                  |      ❌      |   ✅   |  ✅  | ✅  |                              ❌                              |
+| `setMetadata`                                       |      ✅      |   ✅   |  ✅  | ✅  |                              ❌                              |
+
+Same semantics where a capability exists in two ports; each port is written idiomatically for its ecosystem and carries its own test suite.
 
 ## 🚀 Usage <a name="usage"></a>
+
+TypeScript below; the same shapes exist per the matrix above in [Python](./python/), [Rust](./rust/), [Go](./go/), and [.NET](./dotnet/).
 
 Jump to a pattern:
 
 - [Basic usage](#basic-usage)
-- [Streaming operations](#streaming-operations)
+- [Reading and saving](#reading-and-saving)
 - [S3 integration](#s3-integration)
 - [File type detection](#file-type-detection)
 - [FormData support](#formdata-support)
@@ -101,7 +157,7 @@ import File from '@smooai/file';
 // Create a file from a local path
 const file = await File.createFromFile('path/to/file.txt');
 
-// Read file contents (streams automatically)
+// Read file contents
 const content = await file.readFileString();
 console.log(content);
 
@@ -120,21 +176,21 @@ console.log(file.metadata);
 
 <p align="right">(<a href="#usage">back to usage</a>)</p>
 
-#### Streaming operations <a name="streaming-operations"></a>
+#### Reading and saving <a name="reading-and-saving"></a>
 
 ```typescript
 import File from '@smooai/file';
 
-// Create a file from a URL (streams automatically)
-const file = await File.createFromUrl('https://example.com/large-file.zip');
+// Create a file from a URL
+const file = await File.createFromUrl('https://example.com/file.zip');
 
-// Pipe to a destination (streams without loading entire file)
+// Pipe to a destination stream
 await file.pipeTo(someWritableStream);
 
-// Read as bytes (streams in chunks)
+// Read as bytes (note: buffers the content — the TS port has no lazy streaming yet)
 const bytes = await file.readFileBytes();
 
-// Save to filesystem (streams directly)
+// Save to filesystem
 const { original, newFile } = await file.saveToFile('downloads/file.zip');
 ```
 
@@ -145,10 +201,10 @@ const { original, newFile } = await file.saveToFile('downloads/file.zip');
 ```typescript
 import File from '@smooai/file';
 
-// Create from S3 (streams automatically)
+// Create from S3
 const file = await File.createFromS3('my-bucket', 'path/to/file.jpg');
 
-// Upload to S3 (streams directly)
+// Upload to S3
 await file.uploadToS3('my-bucket', 'remote/file.jpg');
 
 // Save to S3 (creates new file instance)
@@ -286,10 +342,9 @@ const url = await File.createPresignedUploadUrl({
 
 ## 🔧 Built with
 
-- TypeScript
-- Node.js File System API
-- AWS SDK v3
-- [file-type](https://github.com/sindresorhus/file-type) for magic number-based MIME type detection
+- TypeScript · Node.js File System API · AWS SDK v3
+- [file-type](https://github.com/sindresorhus/file-type) for magic number-based MIME type detection (TypeScript port)
+- [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for MIME sniffing (.NET port)
 - [@smooai/fetch](https://github.com/SmooAI/fetch) for URL downloads
 - [@smooai/logger](https://github.com/SmooAI/logger) for structured logging
 
@@ -298,7 +353,7 @@ const url = await File.createPresignedUploadUrl({
 `@smooai/file` is built and open-sourced by **[Smoo AI](https://smoo.ai)** — the AI-powered business platform with AI built into every product: CRM, customer support, campaigns, field service, observability, and developer tools.
 
 - 🧰 **More open source from Smoo AI** — [smoo.ai/open-source](https://smoo.ai/open-source)
-- 🧩 **Sibling packages** — [@smooai/fetch](https://github.com/SmooAI/fetch), [@smooai/logger](https://github.com/SmooAI/logger), [@smooai/config](https://github.com/SmooAI/config), [smooth](https://github.com/SmooAI/smooth)
+- 🧩 **Sibling packages** — [@smooai/fetch](https://github.com/SmooAI/fetch), [@smooai/logger](https://github.com/SmooAI/logger), [@smooai/config](https://github.com/SmooAI/config), [smooth-operator](https://github.com/SmooAI/smooth-operator), [smooth](https://github.com/SmooAI/smooth)
 
 ## 🤝 Contributing <a name="contributing"></a>
 
@@ -308,7 +363,7 @@ Contributions are welcome. This project uses [changesets](https://github.com/cha
 
 1. Fork the repository
 2. Create your branch (`git checkout -b amazing-feature`)
-3. Make your changes
+3. Make your changes (the five ports live in `src/`, `python/`, `rust/`, `go/`, `dotnet/`)
 4. Add a changeset to document them:
 
     ```sh
