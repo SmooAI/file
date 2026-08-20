@@ -2,64 +2,44 @@
 
 /**
  * Synchronizes version from package.json to all sub-package manifests.
+ *
+ * Runs from the changesets `version` lifecycle so the bumped manifests land in
+ * the release commit. Running it after `changeset publish` (as this repo used
+ * to) mutates a CI workspace nobody commits, which is why every git tag shipped
+ * a stale version constant.
  */
 
 import { readFileSync, writeFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = join(__dirname, '..');
-
-const packageJson = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8'));
-const version = packageJson.version;
+import { relative } from 'path';
+import { rootDir, targets, version } from './version-targets.mjs';
 
 console.log(`Syncing version ${version} to all sub-packages...`);
 
-const files = [
-    {
-        path: join(rootDir, 'python', 'pyproject.toml'),
-        pattern: /^version = ".*"$/m,
-        replacement: `version = "${version}"`,
-    },
-    {
-        path: join(rootDir, 'rust', 'file', 'Cargo.toml'),
-        pattern: /^version = ".*"$/m,
-        replacement: `version = "${version}"`,
-    },
-    {
-        path: join(rootDir, 'go', 'file', 'version.go'),
-        pattern: /const Version = ".*"/,
-        replacement: `const Version = "${version}"`,
-    },
-    {
-        path: join(rootDir, 'dotnet', 'src', 'SmooAI.File', 'SmooAI.File.csproj'),
-        pattern: /<Version>.*<\/Version>/,
-        replacement: `<Version>${version}</Version>`,
-    },
-    {
-        path: join(rootDir, 'dotnet', 'src', 'SmooAI.File.S3', 'SmooAI.File.S3.csproj'),
-        pattern: /<Version>.*<\/Version>/,
-        replacement: `<Version>${version}</Version>`,
-    },
-];
-
-for (const file of files) {
+for (const target of targets) {
+    const name = relative(rootDir, target.path);
+    let content;
     try {
-        const content = readFileSync(file.path, 'utf8');
-        const updated = content.replace(file.pattern, file.replacement);
-        if (content !== updated) {
-            writeFileSync(file.path, updated);
-            console.log(`  Updated ${file.path}`);
-        } else {
-            console.log(`  Already up to date: ${file.path}`);
-        }
+        content = readFileSync(target.path, 'utf8');
     } catch (error) {
         if (error.code === 'ENOENT') {
-            console.log(`  Skipped (not found): ${file.path}`);
-        } else {
-            throw error;
+            console.log(`  Skipped (not found): ${name}`);
+            continue;
         }
+        throw error;
+    }
+
+    // A pattern that stopped matching (renamed field, reformatted file) would
+    // otherwise look identical to "already correct" and silently ship drift.
+    if (!target.pattern.test(content)) {
+        throw new Error(`${name}: pattern ${target.pattern} matched nothing — the version field moved or was renamed.`);
+    }
+
+    const updated = content.replace(target.pattern, target.replacement);
+    if (content === updated) {
+        console.log(`  Already up to date: ${name}`);
+    } else {
+        writeFileSync(target.path, updated);
+        console.log(`  Updated ${name}`);
     }
 }
 

@@ -100,16 +100,14 @@ flowchart LR
 
 ## 📦 Install <a name="install"></a>
 
-| Language    | Package                                                           | Install                                 |
-| ----------- | ----------------------------------------------------------------- | --------------------------------------- |
-| TypeScript  | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file)      | `pnpm add @smooai/file`                 |
-| Python      | [`smooai-file`](https://pypi.org/project/smooai-file/)            | `pip install smooai-file`               |
-| Rust        | [`smooai-file`](https://crates.io/crates/smooai-file)             | `cargo add smooai-file`                 |
-| Go          | `github.com/SmooAI/file/go/file`                                  | `go get github.com/SmooAI/file/go/file` |
-| .NET (core) | [`SmooAI.File`](https://www.nuget.org/packages/SmooAI.File)       | `dotnet add package SmooAI.File`        |
-| .NET (S3)   | [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) | `dotnet add package SmooAI.File.S3`     |
-
-> **Go note:** `go get` currently resolves a pseudo-version tracking `main` (the module path doesn't yet carry the `/v2` suffix the `go/file/v2.x` tags would need, so tagged versions don't resolve). `main` is what's released everywhere else; a proper `/v2` module path is planned.
+| Language    | Package                                                           | Install                                    |
+| ----------- | ----------------------------------------------------------------- | ------------------------------------------ |
+| TypeScript  | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file)      | `pnpm add @smooai/file`                    |
+| Python      | [`smooai-file`](https://pypi.org/project/smooai-file/)            | `pip install smooai-file`                  |
+| Rust        | [`smooai-file`](https://crates.io/crates/smooai-file)             | `cargo add smooai-file`                    |
+| Go          | `github.com/SmooAI/file/go/file/v2`                               | `go get github.com/SmooAI/file/go/file/v2` |
+| .NET (core) | [`SmooAI.File`](https://www.nuget.org/packages/SmooAI.File)       | `dotnet add package SmooAI.File`           |
+| .NET (S3)   | [`SmooAI.File.S3`](https://www.nuget.org/packages/SmooAI.File.S3) | `dotnet add package SmooAI.File.S3`        |
 
 Language-specific source lives in [`src/`](./src/) (TypeScript), [`python/`](./python/), [`rust/`](./rust/), [`go/`](./go/), and [`dotnet/`](./dotnet/). The .NET port uses [Mime-Detective](https://github.com/MediatedCommunications/Mime-Detective) for magic-byte MIME sniffing.
 

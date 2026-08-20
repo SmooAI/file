@@ -51,8 +51,8 @@
     "scripts": {
         "aibranch": "pnpm generate-git-branch",
         "build": "pnpm tsdown && pnpm run python:build && pnpm run rust:build && pnpm run go:build",
-        "check-all": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run python:typecheck && pnpm run python:lint && pnpm run python:format:check && pnpm run rust:fmt:check && pnpm run rust:lint && pnpm run rust:test && pnpm run go:fmt:check && pnpm run go:lint && pnpm run go:test && pnpm run build",
-        "ci:publish": "pnpm build && pnpm changeset publish && pnpm run version:sync",
+        "check-all": "pnpm run version:check && pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run python:typecheck && pnpm run python:lint && pnpm run python:format:check && pnpm run rust:fmt:check && pnpm run rust:lint && pnpm run rust:test && pnpm run go:fmt:check && pnpm run go:lint && pnpm run go:test && pnpm run build",
+        "ci:publish": "pnpm build && pnpm changeset publish",
         "format": "oxfmt --write . && pnpm run python:format && pnpm run rust:fmt && pnpm run go:fmt",
         "lint": "oxlint . && pnpm run python:lint && pnpm run rust:lint && pnpm run go:lint",
         "lint:fix": "oxlint --fix .",
@@ -82,6 +82,8 @@
         "go:fmt:check": "(cd go/file && test -z \"$(gofmt -l .)\")",
         "go:lint": "(cd go/file && go vet ./...)",
         "go:test": "(cd go/file && go test -v ./...)",
+        "version": "changeset version && node scripts/sync-versions.mjs",
+        "version:check": "node scripts/check-versions.mjs",
         "version:sync": "node scripts/sync-versions.mjs"
     },
     "dependencies": {

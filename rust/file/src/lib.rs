@@ -47,8 +47,25 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 mod tests {
     use super::*;
 
+    /// package.json is the single source of truth for the version across all five
+    /// ports; `scripts/sync-versions.mjs` copies it here. Asserting against a
+    /// hardcoded literal instead is how this crate sat at "1.1.5" while the repo
+    /// shipped 2.2.12 — the test pinned the drift in place rather than catching it.
     #[test]
-    fn test_version() {
-        assert_eq!(VERSION, "1.1.5");
+    fn version_matches_package_json() {
+        let manifest =
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../package.json");
+        let raw = std::fs::read_to_string(&manifest)
+            .unwrap_or_else(|e| panic!("read {}: {e}", manifest.display()));
+        let expected = raw
+            .split("\"version\":")
+            .nth(1)
+            .and_then(|rest| rest.split('"').nth(1))
+            .expect("package.json has no \"version\" field");
+
+        assert_eq!(
+            VERSION, expected,
+            "run `pnpm version:sync` and commit the result"
+        );
     }
 }
