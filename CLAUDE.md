@@ -140,6 +140,25 @@ pnpm go:test
 pnpm go:lint
 ```
 
+### .NET
+
+Needs the .NET SDK installed locally — `pnpm test`, `pnpm build`, `pnpm format:check`
+and `pnpm check-all` all reach the .NET port now, so without the SDK they fail.
+
+```bash
+cd dotnet
+dotnet build --configuration Release
+dotnet test --configuration Release
+dotnet format                      # writes
+dotnet format --verify-no-changes  # checks
+
+# Or from root:
+pnpm dotnet:build
+pnpm dotnet:test
+pnpm dotnet:format
+pnpm dotnet:format:check
+```
+
 ---
 
 ## Testing
@@ -148,6 +167,7 @@ pnpm go:lint
 - **Python**: pytest via `poe test`
 - **Rust**: `cargo test` in `rust/file/`
 - **Go**: `go test` in `go/file/`
+- **.NET**: `dotnet test` in `dotnet/` (xunit)
 - All tests must pass before merging
 
 ---
