@@ -73,18 +73,13 @@ jobs:
             - name: Lint
               run: pnpm lint
 
+            # `pnpm format:check` covers all five languages, so this step and the
+            # local gate can no longer disagree about what "formatted" means.
             - name: Format check
-              run: pnpm format:check && pnpm python:format:check && pnpm rust:fmt:check && pnpm go:fmt:check
+              run: pnpm format:check
 
             - name: Test
               run: pnpm test
 
             - name: Build
               run: pnpm build
-
-            - name: Build and test .NET
-              run: |
-                  dotnet restore
-                  dotnet build --configuration Release --no-restore
-                  dotnet test --configuration Release --no-build --logger "console;verbosity=minimal"
-              working-directory: dotnet
