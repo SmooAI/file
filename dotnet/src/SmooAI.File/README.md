@@ -104,7 +104,7 @@ var file = await SmooFile.CreateFromUrlAsync("https://example.com/report.pdf");
 - [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) — TypeScript / Node
 - [`smooai-file`](https://crates.io/crates/smooai-file) — Rust
 - [`smooai-file`](https://pypi.org/project/smooai-file/) — Python
-- [`github.com/SmooAI/file/go/file`](https://github.com/SmooAI/file/tree/main/go/file) — Go
+- [`github.com/SmooAI/file/go/file/v2`](https://github.com/SmooAI/file/tree/main/go/file) — Go
 
 ## License
 

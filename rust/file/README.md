@@ -72,12 +72,12 @@ cargo add smooai-file
 
 smooai-file is available as native implementations in **TypeScript**, **Python**, **Rust**, and **Go** — each built with idiomatic patterns for its ecosystem.
 
-| Language   | Package                                                      | Install                                 |
-| ---------- | ------------------------------------------------------------ | --------------------------------------- |
-| TypeScript | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) | `pnpm add @smooai/file`                 |
-| Python     | [`smooai-file`](https://pypi.org/project/smooai-file/)       | `pip install smooai-file`               |
-| Rust       | [`smooai-file`](https://crates.io/crates/smooai-file)        | `cargo add smooai-file`                 |
-| Go         | `github.com/SmooAI/file/go/file`                             | `go get github.com/SmooAI/file/go/file` |
+| Language   | Package                                                      | Install                                    |
+| ---------- | ------------------------------------------------------------ | ------------------------------------------ |
+| TypeScript | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) | `pnpm add @smooai/file`                    |
+| Python     | [`smooai-file`](https://pypi.org/project/smooai-file/)       | `pip install smooai-file`                  |
+| Rust       | [`smooai-file`](https://crates.io/crates/smooai-file)        | `cargo add smooai-file`                    |
+| Go         | `github.com/SmooAI/file/go/file/v2`                          | `go get github.com/SmooAI/file/go/file/v2` |
 
 ### Key Features
 
@@ -351,7 +351,7 @@ file.checksum() -> Result<String>   // SHA-256 hex digest
 
 - [@smooai/file](https://www.npmjs.com/package/@smooai/file) — TypeScript/Node.js version
 - [smooai-file (Python)](https://pypi.org/project/smooai-file/) — Python version
-- `github.com/SmooAI/file/go/file` — Go version
+- `github.com/SmooAI/file/go/file/v2` — Go version
 
 ## Development
 

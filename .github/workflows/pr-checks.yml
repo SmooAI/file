@@ -64,6 +64,9 @@ jobs:
               run: uv sync --group dev
               working-directory: python
 
+            - name: Version drift check
+              run: pnpm version:check
+
             - name: Typecheck
               run: pnpm typecheck
 

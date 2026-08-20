@@ -73,6 +73,9 @@ jobs:
               run: uv sync --group dev
               working-directory: python
 
+            - name: Version drift check
+              run: pnpm version:check
+
             - name: Typecheck
               run: pnpm typecheck
 
@@ -94,6 +97,10 @@ jobs:
               with:
                   commit: '🦋 New version release'
                   title: '🦋 New version release'
+                  # `pnpm run version` = `changeset version && sync-versions`. The action
+                  # commits the working tree after this runs, so the synced manifests land
+                  # in the release commit instead of being thrown away in a CI workspace.
+                  version: pnpm run version
                   publish: pnpm ci:publish
                   createGithubReleases: true
               env:
@@ -114,10 +121,10 @@ jobs:
 
             - name: Publish smooai-file to crates.io
               if: steps.changesets.outputs.published == 'true'
-              # --allow-dirty is needed because sync-versions.mjs modifies
-              # Cargo.toml (and rebuild updates Cargo.lock) between the
-              # committed state and publish. --locked would reject that mismatch.
-              run: cargo publish --allow-dirty --manifest-path rust/file/Cargo.toml
+              # No --allow-dirty: sync-versions.mjs now runs in the `version` lifecycle,
+              # so Cargo.toml and Cargo.lock are already committed at the synced version
+              # and the tree is clean here. --locked keeps the publish build reproducible.
+              run: cargo publish --locked --manifest-path rust/file/Cargo.toml
               env:
                   CARGO_REGISTRY_TOKEN: ${{ secrets.SMOOAI_CARGO_REGISTRY_TOKEN }}
 
@@ -126,6 +133,19 @@ jobs:
               run: |
                   VERSION=$(node -p "require('./package.json').version")
                   TAG="go/file/v${VERSION}"
+
+                  # Last line of defence before an immutable tag: Go only resolves
+                  # go/file/vN.x.y if go.mod's module path carries the matching /vN
+                  # suffix (none for majors 0 and 1). Mismatch = a tag that resolves
+                  # nothing, forever.
+                  MAJOR="${VERSION%%.*}"
+                  MODULE=$(awk '/^module /{print $2}' go/file/go.mod)
+                  if [ "$MAJOR" -ge 2 ]; then EXPECTED="github.com/SmooAI/file/go/file/v${MAJOR}"; else EXPECTED="github.com/SmooAI/file/go/file"; fi
+                  if [ "$MODULE" != "$EXPECTED" ]; then
+                    echo "::error::go.mod module is '${MODULE}' but tag ${TAG} needs '${EXPECTED}'"
+                    exit 1
+                  fi
+
                   echo "Creating Go module tag: ${TAG}"
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"

@@ -1,4 +1,4 @@
-module github.com/SmooAI/file/go/file
+module github.com/SmooAI/file/go/file/v2
 
 go 1.23
 

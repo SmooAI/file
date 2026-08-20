@@ -54,19 +54,19 @@ A Go port of [@smooai/file](https://www.npmjs.com/package/@smooai/file) that mir
 ### Install
 
 ```bash
-go get github.com/SmooAI/file/go/file
+go get github.com/SmooAI/file/go/file/v2
 ```
 
 ### Multi-Language Support
 
 smooai-file is available as native implementations in **TypeScript**, **Python**, **Rust**, and **Go** — each built with idiomatic patterns for its ecosystem.
 
-| Language   | Package                                                      | Install                                 |
-| ---------- | ------------------------------------------------------------ | --------------------------------------- |
-| TypeScript | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) | `pnpm add @smooai/file`                 |
-| Python     | [`smooai-file`](https://pypi.org/project/smooai-file/)       | `pip install smooai-file`               |
-| Rust       | [`smooai-file`](https://crates.io/crates/smooai-file)        | `cargo add smooai-file`                 |
-| Go         | `github.com/SmooAI/file/go/file`                             | `go get github.com/SmooAI/file/go/file` |
+| Language   | Package                                                      | Install                                    |
+| ---------- | ------------------------------------------------------------ | ------------------------------------------ |
+| TypeScript | [`@smooai/file`](https://www.npmjs.com/package/@smooai/file) | `pnpm add @smooai/file`                    |
+| Python     | [`smooai-file`](https://pypi.org/project/smooai-file/)       | `pip install smooai-file`                  |
+| Rust       | [`smooai-file`](https://crates.io/crates/smooai-file)        | `cargo add smooai-file`                    |
+| Go         | `github.com/SmooAI/file/go/file/v2`                          | `go get github.com/SmooAI/file/go/file/v2` |
 
 ### Key Features
 
@@ -121,7 +121,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/SmooAI/file/go/file"
+    "github.com/SmooAI/file/go/file/v2"
 )
 
 func main() {
@@ -164,7 +164,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/SmooAI/file/go/file"
+    "github.com/SmooAI/file/go/file/v2"
 )
 
 func main() {
@@ -199,7 +199,7 @@ import (
     "log"
     "time"
 
-    "github.com/SmooAI/file/go/file"
+    "github.com/SmooAI/file/go/file/v2"
 )
 
 func main() {
@@ -240,7 +240,7 @@ import (
     "log"
     "strings"
 
-    "github.com/SmooAI/file/go/file"
+    "github.com/SmooAI/file/go/file/v2"
 )
 
 func main() {
@@ -268,7 +268,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/SmooAI/file/go/file"
+    "github.com/SmooAI/file/go/file/v2"
 )
 
 func main() {
