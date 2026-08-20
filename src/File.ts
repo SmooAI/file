@@ -14,7 +14,7 @@ import fetch, { Response } from '@smooai/fetch';
 import ServerLogger from '@smooai/logger/AwsServerLogger';
 import { FileContentMismatchError, FileMimeError, FileSizeError, FileValidationError } from './errors';
 
-export { FileContentMismatchError, FileMimeError, FileSizeError, FileValidationError } from './errors';
+export { FileContentMismatchError, FileMimeError, FileSizeError, FileValidationError, FileValidationKind } from './errors';
 
 const logger = new ServerLogger();
 

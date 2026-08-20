@@ -1,10 +1,30 @@
 /**
+ * The portable discriminant for a validation failure.
+ *
+ * The same three string values in all five ports — Go's `ValidationKind`, and
+ * the `kind` field added here, in Python, Rust and .NET. Catching by TYPE is not
+ * portable (Rust collapses to an enum, Go to one struct with a field), so this
+ * is what code that has to work the same in more than one language branches on.
+ * Pinned by `spec/error-taxonomy.json`.
+ */
+export const FileValidationKind = {
+    Size: 'size',
+    Mime: 'mime',
+    ContentMismatch: 'content_mismatch',
+} as const;
+
+export type FileValidationKind = (typeof FileValidationKind)[keyof typeof FileValidationKind];
+
+/**
  * Base class for all file validation errors.
  * Consumers can `catch (err) { if (err instanceof FileValidationError) { ... } }`
  * to uniformly map validation failures to an HTTP 400 or similar boundary response.
  */
 export class FileValidationError extends Error {
-    constructor(message: string) {
+    constructor(
+        message: string,
+        public readonly kind: FileValidationKind,
+    ) {
         super(message);
         this.name = 'FileValidationError';
     }
@@ -22,6 +42,7 @@ export class FileSizeError extends FileValidationError {
             actualSize === undefined
                 ? `File size is unknown; maxSize is ${maxSize} bytes`
                 : `File size (${actualSize} bytes) exceeds maximum allowed (${maxSize} bytes)`,
+            FileValidationKind.Size,
         );
         this.name = 'FileSizeError';
     }
@@ -39,6 +60,7 @@ export class FileMimeError extends FileValidationError {
             actualMimeType
                 ? `File mime type "${actualMimeType}" is not in the allowed list: ${allowedMimes.join(', ')}`
                 : `File mime type is unknown; allowed types are: ${allowedMimes.join(', ')}`,
+            FileValidationKind.Mime,
         );
         this.name = 'FileMimeError';
     }
@@ -54,7 +76,10 @@ export class FileContentMismatchError extends FileValidationError {
         public readonly claimedMimeType: string | undefined,
         public readonly detectedMimeType: string | undefined,
     ) {
-        super(`File content does not match claimed mime type. Claimed: ${claimedMimeType ?? 'unknown'}, detected: ${detectedMimeType ?? 'unknown'}`);
+        super(
+            `File content does not match claimed mime type. Claimed: ${claimedMimeType ?? 'unknown'}, detected: ${detectedMimeType ?? 'unknown'}`,
+            FileValidationKind.ContentMismatch,
+        );
         this.name = 'FileContentMismatchError';
     }
 }

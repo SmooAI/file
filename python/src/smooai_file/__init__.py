@@ -13,6 +13,7 @@ from ._errors import (
     FileMimeError,
     FileSizeError,
     FileValidationError,
+    FileValidationKind,
 )
 from ._file import File
 from ._metadata import Metadata, MetadataHint
@@ -25,6 +26,7 @@ __all__ = [
     "FileSizeError",
     "FileSource",
     "FileValidationError",
+    "FileValidationKind",
     "Metadata",
     "MetadataHint",
     "detect_from_bytes",

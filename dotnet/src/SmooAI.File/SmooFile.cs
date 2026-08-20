@@ -204,6 +204,29 @@ public sealed class SmooFile
     }
 
     /// <summary>
+    /// Merge partial metadata into this file's metadata. Only the properties set
+    /// on <paramref name="updates"/> (non-null) overwrite what is already there.
+    ///
+    /// The counterpart to <c>setMetadata</c> / <c>set_metadata</c> / <c>SetMetadata</c>
+    /// in the TypeScript, Python, Rust and Go ports — .NET was the only one without it.
+    /// </summary>
+    /// <param name="updates">Metadata whose non-null properties are applied.</param>
+    public void SetMetadata(FileMetadata updates)
+    {
+        ArgumentNullException.ThrowIfNull(updates);
+
+        Metadata.Name = updates.Name ?? Metadata.Name;
+        Metadata.MimeType = updates.MimeType ?? Metadata.MimeType;
+        Metadata.Size = updates.Size ?? Metadata.Size;
+        Metadata.Extension = updates.Extension ?? Metadata.Extension;
+        Metadata.Url = updates.Url ?? Metadata.Url;
+        Metadata.Path = updates.Path ?? Metadata.Path;
+        Metadata.Hash = updates.Hash ?? Metadata.Hash;
+        Metadata.LastModified = updates.LastModified ?? Metadata.LastModified;
+        Metadata.CreatedAt = updates.CreatedAt ?? Metadata.CreatedAt;
+    }
+
+    /// <summary>
     /// Read the content as a UTF-8 string.
     /// </summary>
     public async Task<string> ReadStringAsync(CancellationToken ct = default)

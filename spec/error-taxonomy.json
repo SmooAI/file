@@ -1,0 +1,101 @@
+{
+    "$comment": [
+        "The validation-error taxonomy, shared by all five ports. Every language's test",
+        "suite LOADS this file — TypeScript src/ErrorTaxonomy.spec.ts, Python",
+        "python/tests/test_error_taxonomy.py, Rust rust/file/tests/error_taxonomy_tests.rs,",
+        "Go go/file/error_taxonomy_test.go, .NET dotnet/tests/SmooAI.File.Tests/ErrorTaxonomyTests.cs.",
+        "Hand-mirrored literals are what let these five drift apart in the first place,",
+        "so do not copy these values into a test file: read them from here.",
+        "",
+        "WHY a `kind` string exists at all: catching by TYPE is not portable. TypeScript,",
+        "Python and .NET raise three distinct classes; Rust collapses them into one enum",
+        "with three variants; Go returns one struct with a Kind field. Code that has to",
+        "behave the same in more than one language cannot branch on the type, so all five",
+        "now carry the same three `kind` values and that is what it branches on.",
+        "",
+        "NOT pinned here: the human-readable message. Go's is idiomatically Go",
+        "(lowercase, `file:`-prefixed) and should stay that way; forcing five languages",
+        "onto one English sentence would be parity theatre. What must match is the",
+        "machine-readable discriminant and the structured fields carried with it."
+    ],
+    "kinds": {
+        "size": {
+            "value": "size",
+            "raisedWhen": "The file exceeds the declared maximum size, or its size could not be determined.",
+            "fields": ["actualSize", "maxSize"],
+            "$comment": "actualSize is absent/None/null/-1 when the source never exposed a size."
+        },
+        "mime": {
+            "value": "mime",
+            "raisedWhen": "The file's MIME type is not in the declared allowlist.",
+            "fields": ["actualMimeType", "allowedMimeTypes"]
+        },
+        "contentMismatch": {
+            "value": "content_mismatch",
+            "raisedWhen": "Magic-byte detection disagrees with the caller-claimed MIME type. The primary defense against MIME spoofing.",
+            "fields": ["claimedMimeType", "detectedMimeType"]
+        }
+    },
+    "constructors": {
+        "$comment": "What each port names the thing that carries a given kind, so the loaders can be read side by side.",
+        "size": {
+            "typescript": "FileSizeError",
+            "python": "FileSizeError",
+            "rust": "FileValidationError::SizeExceeded",
+            "go": "FileValidationError{Kind: KindSize}",
+            "dotnet": "FileSizeException"
+        },
+        "mime": {
+            "typescript": "FileMimeError",
+            "python": "FileMimeError",
+            "rust": "FileValidationError::MimeNotAllowed",
+            "go": "FileValidationError{Kind: KindMime}",
+            "dotnet": "FileMimeException"
+        },
+        "contentMismatch": {
+            "typescript": "FileContentMismatchError",
+            "python": "FileContentMismatchError",
+            "rust": "FileValidationError::ContentMismatch",
+            "go": "FileValidationError{Kind: KindContentMismatch}",
+            "dotnet": "FileContentMismatchException"
+        }
+    },
+    "cases": [
+        {
+            "name": "size-exceeded",
+            "kind": "size",
+            "actualSize": 100,
+            "maxSize": 50
+        },
+        {
+            "name": "size-unknown",
+            "kind": "size",
+            "actualSize": null,
+            "maxSize": 50
+        },
+        {
+            "name": "mime-not-allowed",
+            "kind": "mime",
+            "actualMimeType": "text/plain",
+            "allowedMimeTypes": ["image/png", "image/jpeg"]
+        },
+        {
+            "name": "mime-unknown",
+            "kind": "mime",
+            "actualMimeType": null,
+            "allowedMimeTypes": ["image/png"]
+        },
+        {
+            "name": "content-mismatch",
+            "kind": "content_mismatch",
+            "claimedMimeType": "image/png",
+            "detectedMimeType": "application/x-php"
+        },
+        {
+            "name": "content-mismatch-undetected",
+            "kind": "content_mismatch",
+            "claimedMimeType": "image/png",
+            "detectedMimeType": null
+        }
+    ]
+}

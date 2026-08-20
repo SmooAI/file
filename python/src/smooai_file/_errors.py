@@ -8,6 +8,24 @@ error messages.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Final
+
+
+class FileValidationKind:
+    """The portable discriminant for a validation failure.
+
+    The same three string values in all five ports — Go's ``ValidationKind``,
+    and the ``kind`` attribute on the exceptions below, on TypeScript's error
+    classes, on Rust's ``FileValidationError::kind()``, and on .NET's
+    ``FileValidationException.Kind``. Catching by TYPE is not portable (Rust
+    collapses to an enum, Go to one struct with a field), so this is what code
+    that has to work the same in more than one language branches on. Pinned by
+    ``spec/error-taxonomy.json``.
+    """
+
+    SIZE: Final = "size"
+    MIME: Final = "mime"
+    CONTENT_MISMATCH: Final = "content_mismatch"
 
 
 class FileValidationError(Exception):
@@ -17,9 +35,10 @@ class FileValidationError(Exception):
     failures to an HTTP 400 or similar boundary response.
     """
 
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, kind: str) -> None:
         super().__init__(message)
         self.message = message
+        self.kind = kind
 
 
 class FileSizeError(FileValidationError):
@@ -32,7 +51,7 @@ class FileSizeError(FileValidationError):
             message = f"File size is unknown; max_size is {max_size} bytes"
         else:
             message = f"File size ({actual_size} bytes) exceeds maximum allowed ({max_size} bytes)"
-        super().__init__(message)
+        super().__init__(message, FileValidationKind.SIZE)
 
 
 class FileMimeError(FileValidationError):
@@ -46,7 +65,7 @@ class FileMimeError(FileValidationError):
             message = f'File mime type "{actual_mime_type}" is not in the allowed list: {allowed_str}'
         else:
             message = f"File mime type is unknown; allowed types are: {allowed_str}"
-        super().__init__(message)
+        super().__init__(message, FileValidationKind.MIME)
 
 
 class FileContentMismatchError(FileValidationError):
@@ -61,4 +80,7 @@ class FileContentMismatchError(FileValidationError):
         self.detected_mime_type = detected_mime_type
         claimed = claimed_mime_type if claimed_mime_type is not None else "unknown"
         detected = detected_mime_type if detected_mime_type is not None else "unknown"
-        super().__init__(f"File content does not match claimed mime type. Claimed: {claimed}, detected: {detected}")
+        super().__init__(
+            f"File content does not match claimed mime type. Claimed: {claimed}, detected: {detected}",
+            FileValidationKind.CONTENT_MISMATCH,
+        )

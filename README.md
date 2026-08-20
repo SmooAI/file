@@ -56,7 +56,7 @@ Magic-byte MIME detection catches spoofed uploads. A `.php` renamed to `avatar.p
 - Validation fails with a **typed error** when the client-claimed MIME disagrees with the bytes, when the file is oversize, or when the type isn't allowed
 - One `validate()` call; the errors map cleanly to HTTP 400
 
-The error shape is idiomatic per language: TypeScript and Python throw `FileContentMismatchError` / `FileSizeError` / `FileMimeError` (all extending `FileValidationError`); .NET throws the same three as exceptions; Rust has a `FileValidationError` enum; Go returns one `FileValidationError` with a `Kind` field (`size` · `mime` · `content_mismatch`).
+The error shape is idiomatic per language: TypeScript and Python throw `FileContentMismatchError` / `FileSizeError` / `FileMimeError` (all extending `FileValidationError`); .NET throws the same three as exceptions; Rust has a `FileValidationError` enum; Go returns one `FileValidationError` with a `Kind` field. Because catch-by-type doesn't survive that, **all five also carry the same `kind` string** (`size` · `mime` · `content_mismatch`) — the discriminant portable code branches on.
 
 #### ☁️ S3 in one call
 
@@ -126,10 +126,14 @@ Every port carries the core promise: **magic-byte MIME detection, typed size/mim
 | Upload to S3 + presigned upload URL                 |     ✅     |   ✅   |  ✅  | ✅  | ✅ ([S3 pkg](https://www.nuget.org/packages/SmooAI.File.S3)) |
 | Signed download URL                                 |     ✅     |   ✅   |  ✅  | ✅  |                              ✅                              |
 | `saveToS3` / `moveToS3` (returns new `File`)        |     ✅     |   ✅   |  ❌  | ❌  |                              ❌                              |
-| `downloadFromS3` (S3 → local path)                  |     ❌     |   ✅   |  ✅  | ✅  |                              ❌                              |
-| `setMetadata`                                       |     ✅     |   ✅   |  ✅  | ✅  |                              ❌                              |
+| `downloadFromS3` (S3 → local path)                  |     ❌     |   ✅   |  ❌  | ❌  |                              ❌                              |
+| `setMetadata`                                       |     ✅     |   ✅   |  ✅  | ✅  |                              ✅                              |
+
+> **On `downloadFromS3`:** only Python writes an S3 object to a local path. Rust's `download_from_s3` is a plain alias for `from_s3`, and Go's replaces the receiver in place — neither touches the filesystem, so neither belongs in this row. TypeScript composes the same thing today with `(await File.createFromS3(b, k)).saveToFile(p)`.
 
 Same semantics where a capability exists in two ports; each port is written idiomatically for its ecosystem and carries its own test suite.
+
+**Errors are portable by `kind`, not by type.** TypeScript, Python and .NET raise three distinct classes; Rust collapses them into one enum; Go returns one struct with a `Kind` field — so `catch (e) { if (e instanceof FileSizeError) }` has no equivalent in Rust or Go. Every port now also carries the same `kind` discriminant (`"size"` · `"mime"` · `"content_mismatch"`), and that is what portable code branches on. The values and the fields each one carries are pinned by [`spec/error-taxonomy.json`](./spec/error-taxonomy.json), which all five test suites load.
 
 ## 🚀 Usage <a name="usage"></a>
 
