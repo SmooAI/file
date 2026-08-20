@@ -8,11 +8,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import File from './File';
 
 // The AWS SDK refuses to build a client without a region and signable credentials.
-// These are deliberately fake — every S3 call in this file is intercepted by MSW
-// below and never leaves the process.
-process.env.AWS_REGION ??= 'us-east-1';
-process.env.AWS_ACCESS_KEY_ID ??= 'integration-test';
-process.env.AWS_SECRET_ACCESS_KEY ??= 'integration-test';
+// These are deliberately fake, and deliberately assigned rather than defaulted with
+// `??=`: a developer with real credentials exported should never have them used to
+// sign anything here, even against a mock that never sends the request.
+process.env.AWS_REGION = 'us-east-1';
+process.env.AWS_ACCESS_KEY_ID = 'integration-test';
+process.env.AWS_SECRET_ACCESS_KEY = 'integration-test';
 
 const BUCKET_NAME = 'smoo-dev-test-bucket';
 const TEST_DIR = path.join(__dirname, 'test');
@@ -103,7 +104,11 @@ const server = setupServer(
 describe('File Integration Tests', () => {
     let tempDir: string;
 
-    beforeAll(() => server.listen());
+    // `onUnhandledRequest: 'error'` rather than MSW's default 'warn', which PASSES
+    // THE REQUEST THROUGH to the real network. A typo in the bucket or region, or a
+    // change that reaches a different endpoint, would otherwise send a signed request
+    // to real AWS and print a warning nobody reads.
+    beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
     afterAll(() => server.close());
 
     beforeEach(() => {
