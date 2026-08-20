@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -6,7 +7,18 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import File from './File';
 
+// The AWS SDK refuses to build a client without a region and signable credentials.
+// These are deliberately fake — every S3 call in this file is intercepted by MSW
+// below and never leaves the process.
+process.env.AWS_REGION ??= 'us-east-1';
+process.env.AWS_ACCESS_KEY_ID ??= 'integration-test';
+process.env.AWS_SECRET_ACCESS_KEY ??= 'integration-test';
+
+const BUCKET_NAME = 'smoo-dev-test-bucket';
 const TEST_DIR = path.join(__dirname, 'test');
+/** Which fixture each S3 key serves. Same fixtures the local-file tests use. */
+const S3_OBJECTS: Record<string, string> = {};
+
 const TEST_FILES = {
     text: path.join(TEST_DIR, 'example.txt'),
     empty: path.join(TEST_DIR, 'empty.txt'),
@@ -15,6 +27,10 @@ const TEST_FILES = {
     svg: path.join(TEST_DIR, 'icon.svg'),
     pdf: path.join(TEST_DIR, 'icon.pdf'),
 } as const;
+
+for (const file of Object.values(TEST_FILES)) {
+    S3_OBJECTS[path.basename(file)] = file;
+}
 
 // Helper function to determine MIME type based on file extension
 function getMimeType(fileName: string): string {
@@ -55,11 +71,37 @@ const server = setupServer(
             },
         });
     }),
+
+    // S3 over MSW. The AWS SDK v3 speaks plain HTTPS, so intercepting the
+    // virtual-hosted-style URL exercises the real client — signing, XML error
+    // parsing, streamed response body — against fixture bytes, with no AWS
+    // account and no container. This is the same shape as the Python port's
+    // `moto` tests; `msw` was already a devDependency here.
+    http.get(`https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/:key`, ({ params }) => {
+        const key = String(params.key);
+        const source = S3_OBJECTS[key];
+
+        if (!source) {
+            return new HttpResponse(
+                `<?xml version="1.0" encoding="UTF-8"?><Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message><Key>${key}</Key></Error>`,
+                { status: 404, headers: { 'Content-Type': 'application/xml' } },
+            );
+        }
+
+        const body = fs.readFileSync(source);
+        return new HttpResponse(body, {
+            headers: {
+                'Content-Type': getMimeType(key),
+                'Content-Length': `${body.length}`,
+                ETag: `"${crypto.createHash('md5').update(body).digest('hex')}"`,
+                'Last-Modified': new Date('2024-01-01T00:00:00Z').toUTCString(),
+            },
+        });
+    }),
 );
 
 describe('File Integration Tests', () => {
     let tempDir: string;
-    const BUCKET_NAME = 'smoo-dev-test-bucket';
 
     beforeAll(() => server.listen());
     afterAll(() => server.close());
@@ -228,8 +270,7 @@ describe('File Integration Tests', () => {
         });
     });
 
-    // Only works when logged in to AWS for smoo.dev
-    describe.skip('createFromS3', () => {
+    describe('createFromS3', () => {
         it('should create a file from S3 for text files', async () => {
             const file = await File.createFromS3(BUCKET_NAME, 'example.txt');
 
