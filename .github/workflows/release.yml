@@ -88,8 +88,15 @@ jobs:
             - name: Build
               run: pnpm build
 
-            - name: Format
-              run: pnpm format
+            # CHECK, never write. `pnpm format` here would rewrite files that then
+            # either get swept into the release commit unreviewed, or — in publish
+            # mode, where the changesets action commits nothing — leave the tree
+            # dirty when `cargo publish --locked` runs, failing every release.
+            # The formatting the release itself needs (changesets writes a
+            # CHANGELOG.md that oxfmt rewrites) happens inside `pnpm run version`,
+            # before the action commits.
+            - name: Format check
+              run: pnpm format:check
 
             - name: Version Update 🦋
               id: changesets
@@ -107,20 +114,35 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
                   NPM_TOKEN: ${{ secrets.SMOOAI_NPM_TOKEN }}
 
+            # Which registries still lack package.json's version. Gating each publish
+            # on its OWN registry, rather than on npm having published in THIS run,
+            # is what makes a retry ship exactly what is missing. The old gate
+            # (`steps.changesets.outputs.published == 'true'`) meant a run where npm
+            # succeeded and a later step failed could never be retried: the retry
+            # found nothing new for npm, so all four remaining steps skipped and the
+            # run went GREEN having published nothing.
+            - name: Check registries
+              id: registries
+              # --expect-npm when changesets just published, so the npm index has a
+              # moment to catch up; reading "missing" during that window would skip
+              # the very publish this run earned and then report success.
+              run: node scripts/check-registries.mjs --github ${{ steps.changesets.outputs.published == 'true' && '--expect-npm' || '' }}
+
             - name: Publish smooai-file to PyPI
-              if: steps.changesets.outputs.published == 'true'
+              if: steps.registries.outputs.pypi_missing == 'true'
               working-directory: python
               env:
                   UV_PUBLISH_TOKEN: ${{ secrets.SMOOAI_PYPI_TOKEN }}
               run: |
-                  # Clean stale build artifacts from the earlier `pnpm build` run
-                  # (which produced wheels at the pre-sync version) so `uv publish`
-                  # doesn't try to upload the stale files alongside the fresh ones.
+                  # Clean artifacts from the earlier `pnpm build` step so `uv publish`
+                  # uploads only what it just built. (The version they carry is no
+                  # longer stale — sync-versions runs in the `version` lifecycle now —
+                  # but a leftover wheel from a previous version still would be.)
                   rm -rf dist/
                   uv run poe publish
 
             - name: Publish smooai-file to crates.io
-              if: steps.changesets.outputs.published == 'true'
+              if: steps.registries.outputs.crates_missing == 'true'
               # No --allow-dirty: sync-versions.mjs now runs in the `version` lifecycle,
               # so Cargo.toml and Cargo.lock are already committed at the synced version
               # and the tree is clean here. --locked keeps the publish build reproducible.
@@ -129,7 +151,7 @@ jobs:
                   CARGO_REGISTRY_TOKEN: ${{ secrets.SMOOAI_CARGO_REGISTRY_TOKEN }}
 
             - name: Tag and publish Go module
-              if: steps.changesets.outputs.published == 'true'
+              if: steps.registries.outputs.go_missing == 'true'
               run: |
                   VERSION=$(node -p "require('./package.json').version")
                   TAG="go/file/v${VERSION}"
@@ -161,7 +183,7 @@ jobs:
               working-directory: dotnet
 
             - name: Pack and publish SmooAI.File + SmooAI.File.S3 to NuGet
-              if: steps.changesets.outputs.published == 'true'
+              if: steps.registries.outputs.nuget_missing == 'true'
               run: |
                   # Version is sourced from csproj <Version>, which sync-versions.mjs
                   # kept in lockstep with package.json before changeset publish ran.
@@ -183,6 +205,16 @@ jobs:
                   done
               env:
                   NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+            # Fails the run if npm published this version and PyPI, crates.io or the
+            # Go tag did not. Without it a partial publish is indistinguishable from
+            # a version-PR run — both are green — and those ports quietly keep
+            # shipping the previous release. NuGet is reported but not asserted: its
+            # index lags an accepted push by minutes to tens of minutes, so holding
+            # it strictly would redden every successful release. See
+            # scripts/check-registries.mjs.
+            - name: Verify no registry was stranded
+              run: node scripts/check-registries.mjs --assert
 
             - name: Auto-Merge Changeset PR
               run: |
