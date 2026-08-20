@@ -1,0 +1,81 @@
+{
+    "$comment": [
+        "The lazy-streaming contract, shared by all five ports. Every language's test",
+        "suite LOADS this file — TypeScript src/LazyStream.spec.ts, Python",
+        "python/tests/test_lazy_contract.py, Rust rust/file/tests/lazy_contract_tests.rs,",
+        "Go go/file/lazy_contract_test.go, .NET dotnet/tests/SmooAI.File.Tests/LazyContractTests.cs.",
+        "Hand-mirrored literals are what let these five drift apart in the first place,",
+        "so do not copy these numbers into a test file: read them from here.",
+        "",
+        "Not asserted here: how many bytes each port pulls off the *underlying source*",
+        "at construction. Every runtime reads ahead by a different amount (Node's",
+        "Readable highWaterMark, Go's bufio, .NET's Stream buffering), so that number is",
+        "not a portable contract — headBytes below is the buffer each port fills for",
+        "detection, and it is asserted directly against each port's exported constant."
+    ],
+    "headBytes": 65536,
+    "constantNames": {
+        "typescript": "LAZY_HEAD_BYTES",
+        "python": "_HEAD_BYTES",
+        "rust": "LAZY_HEAD_BYTES",
+        "go": "streamHeadBytes",
+        "dotnet": "LazyHeadBytes"
+    },
+    "fill": {
+        "pattern": "0123456789abcdef",
+        "$comment": "Source content is this ASCII pattern repeated, then truncated to sourceBytes."
+    },
+    "cases": [
+        {
+            "name": "shorter-than-head",
+            "sourceBytes": 1024,
+            "$comment": "Source ends inside the detection head, so the lazy constructor already holds the whole payload and behaves eagerly.",
+            "lazyAfterConstruct": false,
+            "sizeKnownAfterConstruct": true,
+            "sha256": "4613a38a7f79ada3fc343ea4de1488f8828f0fe602d8cb7bdce958040b204b8b"
+        },
+        {
+            "name": "exactly-head",
+            "sourceBytes": 65536,
+            "$comment": "The head buffer fills exactly, so no port can tell EOF from a pending tail. All five stay lazy, with an empty tail.",
+            "lazyAfterConstruct": true,
+            "sizeKnownAfterConstruct": false,
+            "sha256": "d8b2af1c85cdb4588e978aed5875e12cbfd20f68009823cf914b40cf41d8e4ce"
+        },
+        {
+            "name": "longer-than-head",
+            "sourceBytes": 1048576,
+            "$comment": "The ordinary lazy case: head pulled for detection, tail left in the source until bytes are demanded.",
+            "lazyAfterConstruct": true,
+            "sizeKnownAfterConstruct": false,
+            "sha256": "aca1cd027e979588d14b877b7b0cb8585ad9fec599eb45801992ee5382b3760f"
+        }
+    ],
+    "eagerConstructor": {
+        "$comment": [
+            "from_stream / createFromStream / NewFromStream / CreateFromStreamAsync buffer the",
+            "whole payload at construction, so size is exact and the bytes can be read more",
+            "than once. This is what separates them from the lazy constructor."
+        ],
+        "lazyAfterConstruct": false,
+        "sizeKnownAfterConstruct": true
+    },
+    "fullRead": {
+        "$comment": [
+            "read()/readFileBytes() drains the tail and CACHES it, so a second call returns",
+            "the same bytes. iter_bytes()/iterBytes() drains the tail and does NOT cache — it",
+            "is the bounded-memory path, so the tail is gone once it has been iterated.",
+            "",
+            "KNOWN DIVERGENCE, deliberately not papered over: the ports disagree on HOW they",
+            "report a read after a full iteration. Go returns an error ('no data available');",
+            "TypeScript, Python, Rust and .NET return an empty buffer. What all five agree on",
+            "— and what this fixture pins — is that the payload is never silently replayed,",
+            "which is the property that would corrupt data if it broke. Unifying the two",
+            "shapes changes a published API in four ports, so it is tracked separately",
+            "(pearl: unify post-iteration read across ports) rather than done here."
+        ],
+        "readCaches": true,
+        "iterCaches": false,
+        "payloadReplayedAfterIteration": false
+    }
+}

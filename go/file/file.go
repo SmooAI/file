@@ -369,6 +369,14 @@ func (f *File) MimeType() string { return f.meta.MimeType }
 // Size returns the file size in bytes.
 func (f *File) Size() int64 { return f.meta.Size }
 
+// IsLazy reports whether the payload is still un-buffered — only the detection
+// head has been read and the tail is still in the source reader.
+//
+// Goes false once the bytes are materialised, by Read, UploadToS3, or an eager
+// constructor. Mirrors isLazy / is_lazy / IsLazy in the TypeScript, Python,
+// Rust and .NET ports.
+func (f *File) IsLazy() bool { return f.lazy && !f.loaded }
+
 // Extension returns the file extension without a leading dot (may be empty).
 func (f *File) Extension() string { return f.meta.Extension }
 

@@ -59,18 +59,29 @@ type LazyTail = Pin<Box<dyn AsyncRead + Send + Unpin>>;
 /// # Ok(())
 /// # }
 /// ```
+/// What is left of a lazy stream's tail.
+enum TailState {
+    /// Never touched — the bytes are still in the source reader.
+    Pending(LazyTail),
+    /// `read()` drained it and cached the full payload.
+    Cached(Bytes),
+    /// `iter_bytes()`/`upload_to_s3()` streamed it away without caching, or the
+    /// file was never lazy. There is nothing left to hand out.
+    Consumed,
+}
+
 pub struct File {
     source: FileSource,
     /// Eagerly-buffered bytes. For lazy streams this contains only the
     /// detection head; the tail is in `lazy_tail`.
     data: Bytes,
     metadata: Metadata,
-    /// When `Some(_)`, this file was constructed via `from_stream_lazy` and the
-    /// remainder of the source is still un-buffered. `read()`, `iter_bytes()`,
-    /// and `upload_to_s3()` drain it on demand. After the tail is consumed
-    /// this is `None` and `data` holds the full payload (or nothing, if the
-    /// caller used `iter_bytes` which doesn't cache).
-    lazy_tail: Mutex<Option<LazyTail>>,
+    /// State of the un-buffered remainder of a `from_stream_lazy` source.
+    ///
+    /// Tracking *how* the tail went away, not just *that* it did, is what keeps
+    /// a second `read()` from silently replaying the 64 KiB detection head as
+    /// if it were the whole file.
+    lazy_tail: Mutex<TailState>,
     /// Whether the file is currently in lazy mode (i.e. `data` is just the
     /// head and `lazy_tail` is set or has been drained-by-streaming).
     lazy: bool,
@@ -85,7 +96,7 @@ impl File {
             source,
             data,
             metadata,
-            lazy_tail: Mutex::new(None),
+            lazy_tail: Mutex::new(TailState::Consumed),
             lazy: false,
         }
     }
@@ -462,7 +473,7 @@ impl File {
             source: FileSource::Stream,
             data: head_bytes,
             metadata,
-            lazy_tail: Mutex::new(Some(reader)),
+            lazy_tail: Mutex::new(TailState::Pending(reader)),
             lazy: true,
         })
     }
@@ -743,13 +754,28 @@ impl File {
         if !self.lazy {
             return Ok(self.data.clone());
         }
-        // Lazy path: drain the tail. Take the tail out of the mutex (so
-        // concurrent callers see "already drained") and read it to end.
-        let tail = self.lazy_tail.lock().ok().and_then(|mut g| g.take());
-        let Some(mut tail) = tail else {
-            // Already drained by an earlier call — just return what's cached.
-            return Ok(self.data.clone());
+        // Lazy path: take the tail out of the mutex (so concurrent callers see
+        // "already drained") and decide from its state.
+        let state = self
+            .lazy_tail
+            .lock()
+            .ok()
+            .map(|mut g| std::mem::replace(&mut *g, TailState::Consumed));
+        let mut tail = match state {
+            Some(TailState::Pending(tail)) => tail,
+            // A previous read() already drained and cached the whole payload.
+            Some(TailState::Cached(bytes)) => {
+                if let Ok(mut guard) = self.lazy_tail.lock() {
+                    *guard = TailState::Cached(bytes.clone());
+                }
+                return Ok(bytes);
+            }
+            // Streamed away by iter_bytes/upload_to_s3. Returning `self.data`
+            // here would hand back the detection head as if it were the whole
+            // file — silent truncation. Report the tail as gone instead.
+            _ => return Ok(Bytes::new()),
         };
+
         let mut buf = Vec::with_capacity(self.data.len() + 1024 * 1024);
         buf.extend_from_slice(&self.data);
         let mut chunk = vec![0u8; 64 * 1024];
@@ -760,11 +786,14 @@ impl File {
             }
             buf.extend_from_slice(&chunk[..n]);
         }
-        // We can't swap `self.data` because `read` takes `&self` — but the
-        // payload is captured in the returned Bytes. Callers calling read()
-        // twice on a lazy file get an empty tail the second time. For full
-        // caching semantics on lazy reads, use `read_to_cache` (added below).
+        // `read` takes `&self`, so the payload is cached in the tail state
+        // rather than on `self.data`. That is what makes a second read() return
+        // the same bytes instead of just the head, per
+        // spec/lazy-stream-contract.json (`fullRead.readCaches`).
         let bytes = Bytes::from(buf);
+        if let Ok(mut guard) = self.lazy_tail.lock() {
+            *guard = TailState::Cached(bytes.clone());
+        }
         Ok(bytes)
     }
 
@@ -801,9 +830,23 @@ impl File {
         }
         // Lazy: take the tail out, build a stream that yields head first then
         // the tail's chunks.
-        let tail = self.lazy_tail.lock().ok().and_then(|mut g| g.take());
-        let Some(tail) = tail else {
-            return Box::pin(futures::stream::once(async move { Ok(head) }));
+        let state = self
+            .lazy_tail
+            .lock()
+            .ok()
+            .map(|mut g| std::mem::replace(&mut *g, TailState::Consumed));
+        let tail = match state {
+            Some(TailState::Pending(tail)) => tail,
+            // read() already drained and cached — replay the whole payload.
+            Some(TailState::Cached(bytes)) => {
+                if let Ok(mut guard) = self.lazy_tail.lock() {
+                    *guard = TailState::Cached(bytes.clone());
+                }
+                return Box::pin(futures::stream::once(async move { Ok(bytes) }));
+            }
+            // Already streamed away. Yielding `head` here would replay the
+            // detection head as if it were the file.
+            _ => return Box::pin(futures::stream::once(async move { Ok(Bytes::new()) })),
         };
         // ReaderStream wraps an AsyncRead into a Stream<Item=Result<Bytes>>.
         let tail_stream = ReaderStream::new(tail);
@@ -909,8 +952,12 @@ impl File {
         // Lazy streaming path: spool the head + tail through a temp file so
         // the SDK reads from a seekable source without buffering it all in RAM.
         if self.lazy {
-            let tail = self.lazy_tail.lock().ok().and_then(|mut g| g.take());
-            if let Some(mut tail) = tail {
+            let state = self
+                .lazy_tail
+                .lock()
+                .ok()
+                .map(|mut g| std::mem::replace(&mut *g, TailState::Consumed));
+            if let Some(TailState::Pending(mut tail)) = state {
                 use tokio::io::AsyncWriteExt;
                 let tmpfile = tempfile::NamedTempFile::new().map_err(FileError::Io)?;
                 let path = tmpfile.path().to_owned();

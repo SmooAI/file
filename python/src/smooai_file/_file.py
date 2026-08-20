@@ -99,6 +99,17 @@ class File:
         return self._metadata.size
 
     @property
+    def is_lazy(self) -> bool:
+        """Whether the payload is still un-buffered — only the detection head
+        has been read and the tail is still in the source stream.
+
+        Goes False once the bytes are materialised (``read()``, an eager
+        constructor). Mirrors ``isLazy`` / ``is_lazy`` / ``IsLazy`` in the
+        TypeScript, Rust, Go and .NET ports.
+        """
+        return self._lazy and self._bytes is None
+
+    @property
     def extension(self) -> str | None:
         return self._metadata.extension
 
