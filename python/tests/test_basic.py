@@ -1,10 +1,19 @@
 """Basic tests for smooai-file package."""
 
+import json
+from pathlib import Path
+
 from smooai_file import File, FileSource, Metadata, MetadataHint, __version__
 
 
-def test_version():
-    assert __version__ == "1.1.5"
+def test_version_matches_package_json():
+    """package.json is the single source of truth for the version across all five
+    ports; ``scripts/sync-versions.mjs`` copies it here. Asserting a hardcoded
+    literal instead is how this package sat at "1.1.5" while the repo shipped
+    2.2.12 — the test pinned the drift in place rather than catching it.
+    """
+    package_json = json.loads((Path(__file__).resolve().parents[2] / "package.json").read_text())
+    assert __version__ == package_json["version"], "run `pnpm version:sync` and commit the result"
 
 
 def test_file_source_values():

@@ -27,6 +27,14 @@ export const targets = [
         replacement: `version = "${version}"`,
     },
     {
+        // The runtime constant, not just the packaging metadata. sync-versions
+        // never covered this one, so `smooai_file.__version__` reported 1.1.5 on
+        // a wheel whose pyproject said 2.2.12.
+        path: join(rootDir, 'python', 'src', 'smooai_file', '__init__.py'),
+        pattern: /^__version__ = ".*"$/m,
+        replacement: `__version__ = "${version}"`,
+    },
+    {
         path: join(rootDir, 'rust', 'file', 'Cargo.toml'),
         pattern: /^version = ".*"$/m,
         replacement: `version = "${version}"`,

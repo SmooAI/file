@@ -4,7 +4,7 @@ A unified file handling library for working with files from local filesystem,
 S3, URLs, and streams.
 """
 
-__version__ = "1.1.5"
+__version__ = "2.2.12"
 
 from ._content_disposition import parse_content_disposition
 from ._detection import detect_from_bytes, detect_from_extension, extension_from_mime
