@@ -12,6 +12,7 @@ pub enum FileError {
     Io(#[from] std::io::Error),
 
     /// An HTTP error occurred while fetching a file from a URL.
+    #[cfg(feature = "file")]
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
 

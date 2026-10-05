@@ -1,3 +1,5 @@
+#![cfg(feature = "file")]
+
 //! The Rust loader for the shared lazy-streaming contract.
 //!
 //! Every port has one of these and they all read the SAME file

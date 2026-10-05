@@ -68,6 +68,13 @@ Or via cargo:
 cargo add smooai-file
 ```
 
+Only need to sniff bytes you already hold? Turn off the default `file` feature. That leaves `detection`, `content_disposition` and the validation errors, with no AWS SDK, reqwest or tokio:
+
+```toml
+[dependencies]
+smooai-file = { version = "2", default-features = false }
+```
+
 ### Multi-Language Support
 
 smooai-file is available as native implementations in **TypeScript**, **Python**, **Rust**, and **Go** — each built with idiomatic patterns for its ecosystem.
