@@ -1,3 +1,5 @@
+#![cfg(feature = "file")]
+
 //! Integration tests for the File struct.
 
 use bytes::Bytes;

@@ -1,3 +1,5 @@
+#![cfg(feature = "file")]
+
 //! Full pipeline integration tests.
 
 use bytes::Bytes;

@@ -73,7 +73,7 @@
         "python:test": "(cd python && uv run poe test)",
         "python:typecheck": "(cd python && uv run poe typecheck)",
         "rust:build": "(cd rust/file && cargo build --release)",
-        "rust:check": "(cd rust/file && cargo check --all-targets)",
+        "rust:check": "(cd rust/file && cargo check --all-targets && cargo check --no-default-features --all-targets)",
         "rust:fmt": "(cd rust/file && cargo fmt)",
         "rust:fmt:check": "(cd rust/file && cargo fmt --all -- --check)",
         "rust:lint": "(cd rust/file && cargo clippy --all-targets -- -D warnings)",

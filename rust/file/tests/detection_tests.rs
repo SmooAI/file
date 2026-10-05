@@ -1,3 +1,5 @@
+#![cfg(feature = "file")]
+
 //! Integration tests for file type detection.
 
 use smooai_file::detection::{

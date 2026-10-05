@@ -1,3 +1,5 @@
+#![cfg(feature = "file")]
+
 //! Lazy-stream tests for SMOODEV-967.
 //!
 //! These exercise `File::from_stream_lazy`, `iter_bytes`, and the lazy path
